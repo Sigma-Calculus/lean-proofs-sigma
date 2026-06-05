@@ -1,0 +1,17 @@
+# Lean/Lake build artifacts
+.lake/
+build/
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary proof probes
+tmp/
+*.tmp
+
+# Local TeX/Lean working register; not part of the public proof pool
+LEAN_TEX_REGISTER.md
