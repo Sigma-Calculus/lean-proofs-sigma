@@ -29,6 +29,11 @@ cd lean-proofs-sigma
     finite-template shape-regularity source, vertex/hinge identity,
     conditional continuum bridge, and open-curvature coefficient normalization.
 
+- `Hardtest.HorizonReadout`
+  - File: `Hardtest/HorizonReadout.lean`
+  - Source paper context: Appendix VI finite horizon readout separation,
+    residual completion, and external thermodynamic readout incompleteness.
+
 - `Hardtest.GaugeTransport`
   - File: `Hardtest/GaugeTransport.lean`
   - Source paper context: gauge-like transport, local exactness, cube/Bianchi core,
@@ -59,6 +64,7 @@ Run from the repository root:
 lake build Hardtest.BlockLaplacian
 lake build Hardtest.SigmaAxioms
 lake build Hardtest.SigmaRegge
+lake build Hardtest.HorizonReadout
 lake build Hardtest.GaugeTransport
 lake build Hardtest.DiscreteNoether
 lake build Hardtest.YangMills
@@ -74,6 +80,7 @@ Later proof modules can reuse the pool with, for example:
 import Hardtest.BlockLaplacian
 import Hardtest.SigmaAxioms
 import Hardtest.SigmaRegge
+import Hardtest.HorizonReadout
 import Hardtest.GaugeTransport
 import Hardtest.DiscreteNoether
 import Hardtest.YangMills
@@ -86,6 +93,8 @@ The canonical reusable module path for the Appendix VI block-Laplacian and
 spectral layer is `Hardtest/BlockLaplacian.lean`.
 The canonical reusable module path for the Appendix VI sigma-Regge readout and
 finite-template shape-regularity layer is `Hardtest/SigmaRegge.lean`.
+The canonical reusable module path for the Appendix VI finite horizon readout
+separation layer is `Hardtest/HorizonReadout.lean`.
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
 The canonical reusable module path for the Yang--Mills transport paper is
