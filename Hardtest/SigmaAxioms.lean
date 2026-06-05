@@ -7,12 +7,15 @@ Authors: Oliver Sievers
 import Hardtest.BlockLaplacian
 
 /-!
-# Finite Sigma axiom model
+# Finite Sigma dynamics and axiom model
 
-This file contains the finite transition-level model for the Appendix VI Sigma
-postulate package.  It depends on the concrete four-dimensional fine-edge and
-block-star data from `Hardtest.BlockLaplacian`, but keeps the joint axiom model
-separate from the block-Laplacian and spectral arguments.
+This file contains the finite transition-level framework for the Appendix VI
+Sigma postulate package.  It defines an admissible finite Sigma dynamics class,
+proves that every such dynamics induces the joint `sigma.P` and
+`sigma.1`--`sigma.7` axiom model, and provides the concrete four-dimensional
+block-star instance.  It depends on the fine-edge and block-star data from
+`Hardtest.BlockLaplacian`, but keeps the dynamics and axiom layer separate from
+the block-Laplacian and spectral arguments.
 -/
 
 namespace Hardtest
