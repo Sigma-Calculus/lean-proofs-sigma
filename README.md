@@ -20,7 +20,8 @@ cd lean-proofs-sigma
 - `Hardtest.SigmaAxioms`
   - File: `Hardtest/SigmaAxioms.lean`
   - Source paper context: Appendix VI joint finite transition-level model for
-    `sigma.P` and `sigma.1`--`sigma.7`.
+    `sigma.P` and `sigma.1`--`sigma.7`, generated from an admissible finite
+    Sigma dynamics class.
 
 - `Hardtest.SigmaRegge`
   - File: `Hardtest/SigmaRegge.lean`
@@ -79,8 +80,8 @@ import Hardtest.YangMills
 import Hardtest.YangMillsContinuumBridge
 ```
 
-The canonical reusable module path for the Appendix VI joint finite Sigma axiom
-model is `Hardtest/SigmaAxioms.lean`.
+The canonical reusable module path for the Appendix VI admissible finite Sigma
+dynamics class and joint finite Sigma axiom model is `Hardtest/SigmaAxioms.lean`.
 The canonical reusable module path for the Appendix VI block-Laplacian and
 spectral layer is `Hardtest/BlockLaplacian.lean`.
 The canonical reusable module path for the Appendix VI sigma-Regge readout and
