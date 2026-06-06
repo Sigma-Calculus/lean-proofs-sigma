@@ -12,9 +12,10 @@ import Mathlib
 This file formalizes the finite operator-theoretic core used in Appendix VI for
 Sigma horizon readout separation.  The namespace is deliberately paper-facing:
 `SigmaProofs.HorizonReadout` contains the theorem-level statement that a
-non-injective or thermal external readout of a projected channel is not, by
-itself, internal information loss when the completed residual evolution is
-unitary.
+non-injective external readout of a projected channel is not, by itself,
+internal information loss when the completed residual evolution is represented
+by a finite equivalence.  In this file "thermal" is only a name for the selected
+coarse external readout target; no thermodynamic structure is axiomatized.
 -/
 
 namespace SigmaProofs.HorizonReadout
@@ -22,7 +23,7 @@ namespace SigmaProofs.HorizonReadout
 /--
 Finite residual completion of a projected external channel.  The completed
 residual evolution is represented by an equivalence, which is the finite-set
-version of a unitary information-preserving evolution.
+model of an information-preserving, unitary-like completed evolution.
 -/
 structure FiniteResidualCompletion (Ext Comp : Type*) [Fintype Ext] [Fintype Comp] where
   completedEvolution : Comp ≃ Comp
@@ -101,7 +102,11 @@ theorem finiteReadoutSeparation
 
 end FiniteResidualCompletion
 
-/-- Finite horizon readout datum: a residual completion plus a chosen thermal readout. -/
+/--
+Finite horizon readout datum: a residual completion plus a chosen external
+readout into a type named `Therm`.  The name indicates the intended horizon
+readout role; the formal theorem only uses the readout as a function.
+-/
 structure FiniteHorizonReadoutDatum (Ext Comp Therm : Type*)
     [Fintype Ext] [Fintype Comp] where
   completion : FiniteResidualCompletion Ext Comp
@@ -122,8 +127,8 @@ lemma completedEvolution_injective (D : FiniteHorizonReadoutDatum Ext Comp Therm
 
 /--
 The finite horizon readout separation theorem: a non-injective external thermal
-readout does not imply internal information loss in the completed residual
-dynamics.
+readout, in the sense of the chosen `Therm`-valued function, does not imply
+internal information loss in the completed finite-equivalence dynamics.
 -/
 theorem finiteHorizonReadoutSeparation
     (D : FiniteHorizonReadoutDatum Ext Comp Therm)
@@ -143,7 +148,7 @@ def twoStateCompletion : FiniteResidualCompletion Bool Bool where
     intro x
     rfl
 
-/-- A maximally coarse thermal readout of the two-state external sector. -/
+/-- A maximally coarse external readout of the two-state external sector. -/
 def twoStateThermalReadout (_ : Bool) : PUnit :=
   PUnit.unit
 
@@ -155,7 +160,8 @@ lemma twoStateThermalReadout_noninjective :
 
 /--
 Concrete finite example: thermal readout can be incomplete while the completed
-evolution is injective.
+readout can be incomplete while the completed finite-equivalence evolution is
+injective.
 -/
 theorem finiteThermalReadoutSeparationExample :
     ¬ twoStateCompletion.InternalInformationLoss ∧
