@@ -9,6 +9,7 @@ import Hardtest.SigmaAxioms
 import Hardtest.SigmaRegge
 import Hardtest.HorizonReadout
 import Hardtest.HorizonRadiationVisibility
+import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
 import Hardtest.DiscreteNoether
 import Hardtest.YangMills

@@ -40,6 +40,12 @@ cd lean-proofs-sigma
     criterion: kernel-exact radiation readout induces an injective reduced
     horizon quotient readout.
 
+- `Hardtest.PatchVisibility`
+  - File: `Hardtest/PatchVisibility.lean`
+  - Source paper context: finite Sigma patch visibility thresholds: Planck-clock
+    temporal support, representative/readout stability, collapse action, and
+    logarithmic external visibility threshold.
+
 - `Hardtest.GaugeTransport`
   - File: `Hardtest/GaugeTransport.lean`
   - Source paper context: gauge-like transport, local exactness, cube/Bianchi core,
@@ -72,6 +78,7 @@ lake build Hardtest.SigmaAxioms
 lake build Hardtest.SigmaRegge
 lake build Hardtest.HorizonReadout
 lake build Hardtest.HorizonRadiationVisibility
+lake build Hardtest.PatchVisibility
 lake build Hardtest.GaugeTransport
 lake build Hardtest.DiscreteNoether
 lake build Hardtest.YangMills
@@ -89,6 +96,7 @@ import Hardtest.SigmaAxioms
 import Hardtest.SigmaRegge
 import Hardtest.HorizonReadout
 import Hardtest.HorizonRadiationVisibility
+import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
 import Hardtest.DiscreteNoether
 import Hardtest.YangMills
@@ -105,6 +113,8 @@ The canonical reusable module path for the Appendix VI finite horizon readout
 separation layer is `Hardtest/HorizonReadout.lean`.
 The canonical reusable module path for the Appendix VI horizon-to-radiation
 visibility criterion is `Hardtest/HorizonRadiationVisibility.lean`.
+The canonical reusable module path for the finite Sigma patch visibility
+threshold bridge is `Hardtest/PatchVisibility.lean`.
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
 The canonical reusable module path for the Yang--Mills transport paper is
