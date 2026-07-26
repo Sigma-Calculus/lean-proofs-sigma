@@ -11,6 +11,7 @@ import Hardtest.HorizonReadout
 import Hardtest.HorizonRadiationVisibility
 import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
+import Hardtest.SourceConfluence
 import Hardtest.DiscreteNoether
 import Hardtest.YangMills
 import Hardtest.YangMillsContinuumBridge

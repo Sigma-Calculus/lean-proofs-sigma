@@ -51,6 +51,24 @@ cd lean-proofs-sigma
   - Source paper context: gauge-like transport, local exactness, cube/Bianchi core,
     finite plaquette algebra, and reduced holonomy Noether core.
 
+- `Hardtest.SourceConfluence`
+  - File: `Hardtest/SourceConfluence.lean`
+  - Source paper context: the source-balanced confluence theorem in
+    `discrete_noether_sigma_v3.tex` and its use by
+    `Sigma_Finite_Line_Carrier_Tetrahedral_Stability_Criterion_full_proof.tex`;
+    finite parallel-channel confluence, augmentation-null rank-`d`
+    certificate, positive Sigma transition histories, and their construction
+    from one source-equivariant cyclic history orbit.  The
+    `ConcreteFourCoordinateModel` namespace additionally realizes the
+    rank-three certificate using actual positive fine-edge histories in the
+    concrete four-coordinate Sigma dynamics.  The module also constructs the
+    maximal source-admissible face hull and proves that distinct source-history
+    comparison loops either remain non-boundaries or force nonzero source flux
+    through any proposed filling.
+  - Scope: the source-generated coordinate model is constructive; identifying
+    an independently prescribed physical transition network with that model
+    remains a separate same-section registration problem.
+
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`
   - Source paper context: finite reduced-holonomy Noether charge,
@@ -80,6 +98,7 @@ lake build Hardtest.HorizonReadout
 lake build Hardtest.HorizonRadiationVisibility
 lake build Hardtest.PatchVisibility
 lake build Hardtest.GaugeTransport
+lake build Hardtest.SourceConfluence
 lake build Hardtest.DiscreteNoether
 lake build Hardtest.YangMills
 lake build Hardtest.YangMillsContinuumBridge
@@ -98,6 +117,7 @@ import Hardtest.HorizonReadout
 import Hardtest.HorizonRadiationVisibility
 import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
+import Hardtest.SourceConfluence
 import Hardtest.DiscreteNoether
 import Hardtest.YangMills
 import Hardtest.YangMillsContinuumBridge
@@ -115,6 +135,9 @@ The canonical reusable module path for the Appendix VI horizon-to-radiation
 visibility criterion is `Hardtest/HorizonRadiationVisibility.lean`.
 The canonical reusable module path for the finite Sigma patch visibility
 threshold bridge is `Hardtest/PatchVisibility.lean`.
+The canonical reusable module path for the finite source-confluence
+certificate, the concrete rank-three Sigma realization, and the
+source-admissible face-hull criterion is `Hardtest/SourceConfluence.lean`.
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
 The canonical reusable module path for the Yang--Mills transport paper is
