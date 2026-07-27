@@ -13,6 +13,7 @@ import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
 import Hardtest.SourceConfluence
 import Hardtest.DiscreteNoether
+import Hardtest.SourceNoether
 import Hardtest.YangMills
 import Hardtest.YangMillsContinuumBridge
 

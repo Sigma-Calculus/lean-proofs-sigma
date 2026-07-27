@@ -96,6 +96,18 @@ cd lean-proofs-sigma
   - Source paper context: finite reduced-holonomy Noether charge,
     model-independent cyclic conservation, and functorial isometric transport.
 
+- `Hardtest.SourceNoether`
+  - File: `Hardtest/SourceNoether.lean`
+  - Source paper context: canonical rank-three source-generated realization of
+    the non-scalar cyclic harmonic/Noether action in
+    `discrete_noether_sigma_v3.tex`.  The four-source cyclic transition
+    restricts to an orthogonal order-four action on the augmentation-null
+    carrier, produces cyclic reduced Noether data, and has a directional
+    charge that is not a scalar multiple of the carrier norm.
+  - Scope: this closes the formal source-to-Noether bridge for the canonical
+    parallel-channel response model.  It does not identify an independently
+    prescribed physical transition network with that model.
+
 - `Hardtest.YangMills`
   - File: `Hardtest/YangMills.lean`
   - Source paper context: finite sigma-induced gauge transport, closed-loop
@@ -122,6 +134,7 @@ lake build Hardtest.PatchVisibility
 lake build Hardtest.GaugeTransport
 lake build Hardtest.SourceConfluence
 lake build Hardtest.DiscreteNoether
+lake build Hardtest.SourceNoether
 lake build Hardtest.YangMills
 lake build Hardtest.YangMillsContinuumBridge
 lake build Hardtest
@@ -141,6 +154,7 @@ import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
 import Hardtest.SourceConfluence
 import Hardtest.DiscreteNoether
+import Hardtest.SourceNoether
 import Hardtest.YangMills
 import Hardtest.YangMillsContinuumBridge
 ```
@@ -171,6 +185,10 @@ and source-admissible face-hull criterion is
 
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
+
+The canonical reusable bridge from the concrete four-source confluence model
+to the non-scalar cyclic reduced Noether datum is
+`Hardtest/SourceNoether.lean`.
 
 The canonical reusable module path for the Yang--Mills transport paper is
 `Hardtest/YangMills.lean`.
