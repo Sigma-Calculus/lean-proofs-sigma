@@ -492,6 +492,95 @@ theorem initialSourceEdge_injective
   have haxis := congrArg sigmaFineEdgeAxis h
   simpa using haxis
 
+/--
+Every admissible fine edge leaving the zero event is forward.  This is the
+finite transition-level use of the boundary state: a backward edge at level
+zero would violate `SigmaFineEdgeValid4`.
+-/
+theorem edge_from_baseState0_forward
+    (L : ℕ) (hL : 4 ≤ L) (e : SigmaFineEdge4 L)
+    (hsource :
+      sigmaFineEdgeSource e = baseState0 L hL) :
+    sigmaFineEdgeForward e = true := by
+  by_contra hforward
+  have hfalse : sigmaFineEdgeForward e = false :=
+    Bool.eq_false_of_not_eq_true hforward
+  have hraw : e.1.2 = false := by
+    simpa [sigmaFineEdgeForward] using hfalse
+  have hpositive :
+      0 <
+        (sigmaCoord4Get
+          (sigmaFineEdgeSource e)
+          (sigmaFineEdgeAxis e)).val := by
+    simpa [SigmaFineEdgeValid4, sigmaFineEdgeForward, hraw] using e.2
+  rw [hsource] at hpositive
+  simp [baseState0, levelZero, sigmaCoord4Get] at hpositive
+
+/--
+The four canonical source edges exhaust the full admissible outgoing star at
+the zero event.  Thus the edge frame is not a proper selected subset of that
+star.
+-/
+theorem edge_eq_initialSourceEdge_of_source_eq
+    (L : ℕ) (hL : 4 ≤ L) (e : SigmaFineEdge4 L)
+    (hsource :
+      sigmaFineEdgeSource e = baseState0 L hL) :
+    e = initialSourceEdge L hL (sigmaFineEdgeAxis e) := by
+  apply Subtype.ext
+  change
+    ((sigmaFineEdgeSource e, sigmaFineEdgeAxis e),
+        sigmaFineEdgeForward e) =
+      ((baseState0 L hL, sigmaFineEdgeAxis e), true)
+  rw [hsource, edge_from_baseState0_forward L hL e hsource]
+
+/-- The complete admissible outgoing star at the zero event. -/
+abbrev InitialOutgoingEdge
+    (L : ℕ) (hL : 4 ≤ L) :=
+  {e : SigmaFineEdge4 L //
+    sigmaFineEdgeSource e = baseState0 L hL}
+
+/--
+The source-axis index is canonically equivalent to the complete outgoing
+transition star at the zero event.
+-/
+def initialSourceEdgeEquiv
+    (L : ℕ) (hL : 4 ≤ L) :
+    Fin 4 ≃ InitialOutgoingEdge L hL where
+  toFun j :=
+    ⟨initialSourceEdge L hL j, initialSourceEdge_source L hL j⟩
+  invFun e := sigmaFineEdgeAxis e.1
+  left_inv := by
+    intro j
+    exact initialSourceEdge_axis L hL j
+  right_inv := by
+    intro e
+    apply Subtype.ext
+    exact
+      (edge_eq_initialSourceEdge_of_source_eq
+        L hL e.1 e.2).symm
+
+@[simp]
+theorem initialSourceEdge_primitiveTime
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    sigmaPlanckPrimitiveTime4 (initialSourceEdge L hL j) = 1 :=
+  sigmaPlanckPrimitiveTime4_eq_one _
+
+@[simp]
+theorem initialSourceEdge_tension
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    (concreteSigmaAdmissibleDynamics4 L hL).tension
+        (initialSourceEdge L hL j) =
+      1 := by
+  rfl
+
+theorem initialSourceEdge_tension_pos
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    0 <
+      (concreteSigmaAdmissibleDynamics4 L hL).tension
+        (initialSourceEdge L hL j) := by
+  rw [initialSourceEdge_tension]
+  norm_num
+
 /-- The coordinate cycle viewed as an automorphism of the concrete finite
 Sigma transition skeleton. -/
 noncomputable def rawTransitionComplexAutomorphism

@@ -99,9 +99,12 @@ cd lean-proofs-sigma
     equivariant raw edge-source readout construct the full raw atomic
     source-incidence and source-balanced confluence certificates.  More
     strongly, a regular equivariant orbit of outgoing source edges canonically
-    induces that raw readout as an indicator incidence.  The module does not
-    assert that an independently prescribed physical network supplies the
-    required source-edge orbit or cyclic transition action.
+    induces that raw readout as an indicator incidence.  In the concrete
+    four-coordinate Sigma model, the four forward source edges exhaust the
+    complete admissible outgoing star at the zero event and each has primitive
+    time and positive tension equal to one.  The module does not assert that an
+    independently prescribed physical network supplies the required
+    source-edge orbit or cyclic transition action.
 
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`
@@ -199,7 +202,9 @@ and source-admissible face-hull criterion is
 
 The canonical reusable bridge from a regular equivariant source-edge orbit,
 through its induced raw indicator incidence, to the source-balanced confluence
-certificate is `Hardtest/SourceTransitionOrbit.lean`.
+certificate is `Hardtest/SourceTransitionOrbit.lean`.  The same module proves
+that the canonical four-coordinate source-edge frame is exactly the complete
+admissible outgoing transition star at the zero event.
 
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
