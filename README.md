@@ -61,10 +61,12 @@ cd lean-proofs-sigma
     from one source-equivariant cyclic history orbit.  The
     `ConcreteFourCoordinateModel` namespace additionally realizes the
     rank-three certificate using actual positive fine-edge histories in the
-    concrete four-coordinate Sigma dynamics.  The module also constructs the
-    maximal source-admissible face hull and proves that distinct source-history
-    comparison loops either remain non-boundaries or force nonzero source flux
-    through any proposed filling.
+    concrete four-coordinate Sigma dynamics.  The source-period quotient
+    identifies same-endpoint histories exactly when every registered source
+    period agrees and proves the universal factorization of period-invariant
+    readouts.  The module also constructs the maximal source-admissible face
+    hull and proves that distinct source-history comparison loops either remain
+    non-boundaries or force nonzero source flux through any proposed filling.
   - Scope: the source-generated coordinate model is constructive; identifying
     an independently prescribed physical transition network with that model
     remains a separate same-section registration problem.
@@ -136,8 +138,9 @@ visibility criterion is `Hardtest/HorizonRadiationVisibility.lean`.
 The canonical reusable module path for the finite Sigma patch visibility
 threshold bridge is `Hardtest/PatchVisibility.lean`.
 The canonical reusable module path for the finite source-confluence
-certificate, the concrete rank-three Sigma realization, and the
-source-admissible face-hull criterion is `Hardtest/SourceConfluence.lean`.
+certificate, the source-period quotient, the concrete rank-three Sigma
+realization, and the source-admissible face-hull criterion is
+`Hardtest/SourceConfluence.lean`.
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
 The canonical reusable module path for the Yang--Mills transport paper is

@@ -19,6 +19,9 @@ argument.  It separates two levels:
   required to register such channels as admissible Sigma transition histories;
 * `ConcreteFourCoordinateModel` constructs that realization in rank three
   inside the finite four-coordinate Sigma dynamics.
+* `SourcePeriodClass` quotients admissible same-endpoint histories by their
+  complete registered source-period vectors and proves the corresponding
+  universal readout factorization.
 
 The parallel-channel certificate alone does not instantiate the transition
 criterion.  The concrete rank-three namespace does.
@@ -34,11 +37,12 @@ rank certificate supports the local source-orbit and simplex-carrier route in
 The Lean development proves the centered augmentation algebra, the exact
 rank-`d` statement, the finite parallel-channel certificate, the construction
 of source-indexed Sigma histories from a cyclic equivariant history orbit, and
-a concrete four-coordinate rank-three realization.  It also proves the
-topology/source-defect alternative for face fillings and constructs the maximal
-source-admissible face hull.  It does not identify an independently prescribed
-physical transition network with the concrete model; that same-section
-registration remains separate.
+a concrete four-coordinate rank-three realization.  It proves that the
+distinguished source-period classes retain the augmentation rank independently
+of path representatives.  It also proves the topology/source-defect alternative
+for face fillings and constructs the maximal source-admissible face hull.  It
+does not identify an independently prescribed physical transition network with
+the concrete model; that same-section registration remains separate.
 -/
 
 namespace Hardtest
@@ -241,6 +245,168 @@ structure SourceBalancedConfluenceCertificate (d : ℕ)
 namespace SourceBalancedConfluenceCertificate
 
 variable {d : ℕ} {V E F : Type*} [Fintype E] [Fintype F]
+
+/-- The admissible paths between the registered common endpoints of a
+source-balanced confluence certificate. -/
+def SameEndpointPath
+    (C : SourceBalancedConfluenceCertificate d V E F) :=
+  {p : List E // C.complex.IsEdgePathFrom C.startVertex p C.finishVertex}
+
+/-- The complete source-period vector of an admissible same-endpoint path. -/
+def sourcePeriodVector
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    (p : C.SameEndpointPath) : Fin (d + 1) → ℝ :=
+  fun j => pathIntegral (C.sourceCochain j) p.1
+
+/-- Two admissible same-endpoint paths are physically indistinguishable at
+the source-period layer precisely when all registered source periods agree. -/
+def SameSourcePeriod
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    (p p' : C.SameEndpointPath) : Prop :=
+  C.sourcePeriodVector p = C.sourcePeriodVector p'
+
+/-- Equality of complete source-period vectors is an equivalence relation on
+admissible same-endpoint paths. -/
+theorem sameSourcePeriod_equivalence
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    Equivalence C.SameSourcePeriod := by
+  constructor
+  · intro p
+    rfl
+  · intro p p' h
+    exact h.symm
+  · intro p p' p'' h h'
+    exact h.trans h'
+
+/-- The canonical source-period equivalence relation on admissible
+same-endpoint paths. -/
+def sourcePeriodSetoid
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    Setoid C.SameEndpointPath where
+  r := C.SameSourcePeriod
+  iseqv := C.sameSourcePeriod_equivalence
+
+/-- A source-period class retains exactly the information visible to all
+registered source components and discards the choice of path representative. -/
+abbrev SourcePeriodClass
+    (C : SourceBalancedConfluenceCertificate d V E F) :=
+  Quotient C.sourcePeriodSetoid
+
+/-- The source-period vector descends canonically to source-period classes. -/
+def sourcePeriodClassReadout
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    C.SourcePeriodClass → Fin (d + 1) → ℝ :=
+  Quotient.lift C.sourcePeriodVector (by
+    intro p p' h
+    exact h)
+
+/-- Complete source periods separate the quotient classes by construction. -/
+theorem sourcePeriodClassReadout_injective
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    Function.Injective C.sourcePeriodClassReadout := by
+  intro q q' h
+  revert h
+  refine Quotient.inductionOn q ?_
+  intro p
+  refine Quotient.inductionOn q' ?_
+  intro p' h'
+  apply Quotient.sound
+  exact h'
+
+/-- Any same-endpoint path observable constant on source-period fibers factors
+canonically through the source-period quotient. -/
+def sourcePeriodQuotientLift
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    {A : Sort*}
+    (f : C.SameEndpointPath → A)
+    (hf : ∀ p p', C.SameSourcePeriod p p' → f p = f p') :
+    C.SourcePeriodClass → A :=
+  Quotient.lift f hf
+
+/-- The quotient lift evaluates to the original observable on every path
+representative. -/
+theorem sourcePeriodQuotientLift_mk
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    {A : Sort*}
+    (f : C.SameEndpointPath → A)
+    (hf : ∀ p p', C.SameSourcePeriod p p' → f p = f p')
+    (p : C.SameEndpointPath) :
+    C.sourcePeriodQuotientLift f hf (Quotient.mk _ p) = f p :=
+  rfl
+
+/-- The quotient lift is the unique map whose pullback is the supplied
+source-period-invariant observable. -/
+theorem sourcePeriodQuotientLift_unique
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    {A : Sort*}
+    (f : C.SameEndpointPath → A)
+    (hf : ∀ p p', C.SameSourcePeriod p p' → f p = f p')
+    (g : C.SourcePeriodClass → A)
+    (hg : ∀ p, g (Quotient.mk _ p) = f p) :
+    g = C.sourcePeriodQuotientLift f hf := by
+  funext q
+  refine Quotient.inductionOn q ?_
+  intro p
+  rw [hg]
+  rfl
+
+/-- The source-indexed history supplied by a confluence certificate, regarded
+as an admissible same-endpoint path. -/
+def registeredSameEndpointPath
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    (i : Fin (d + 1)) : C.SameEndpointPath :=
+  ⟨C.path i, C.pathValid i⟩
+
+/-- The canonical source-period class of a registered source history. -/
+def registeredSourcePeriodClass
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    (i : Fin (d + 1)) : C.SourcePeriodClass :=
+  Quotient.mk _ (C.registeredSameEndpointPath i)
+
+/-- Reading a registered source-history class recovers its common offset plus
+the corresponding centered source atom. -/
+theorem sourcePeriodClassReadout_registered
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    (i j : Fin (d + 1)) :
+    C.sourcePeriodClassReadout (C.registeredSourcePeriodClass i) j =
+      C.commonOffset j + centeredAtom d i j := by
+  exact C.pathValue i j
+
+/-- Removing the common offset from the quotient readout recovers the centered
+source atom exactly. -/
+theorem registeredSourcePeriodClass_centeredReadout
+    (C : SourceBalancedConfluenceCertificate d V E F)
+    (i j : Fin (d + 1)) :
+    C.sourcePeriodClassReadout (C.registeredSourcePeriodClass i) j -
+        C.commonOffset j =
+      centeredAtom d i j := by
+  rw [C.sourcePeriodClassReadout_registered]
+  ring
+
+/-- The distinguished source-period classes retain the exact augmentation
+rank certificate independently of their path representatives. -/
+theorem registeredSourcePeriodClass_hasAugmentationRankCertificate
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    HasAugmentationRankCertificate d
+      (fun i j =>
+        C.sourcePeriodClassReadout (C.registeredSourcePeriodClass i) j -
+          C.commonOffset j) := by
+  simpa [C.registeredSourcePeriodClass_centeredReadout] using
+    centeredAtom_hasAugmentationRankCertificate d
+
+/-- Distinct source atoms determine distinct source-period classes even when
+their path representatives are not unique. -/
+theorem registeredSourcePeriodClass_injective
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    Function.Injective C.registeredSourcePeriodClass := by
+  intro i k h
+  apply centeredAtom_injective d
+  funext j
+  have hj :=
+    congrFun (congrArg C.sourcePeriodClassReadout h) j
+  rw [C.sourcePeriodClassReadout_registered,
+    C.sourcePeriodClassReadout_registered] at hj
+  linarith
 
 /-- The signed comparison loop formed by a source-indexed path followed by
 the reverse of a second source-indexed path with the same endpoints. -/
