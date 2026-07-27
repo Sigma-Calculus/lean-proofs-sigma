@@ -40,6 +40,13 @@ automorphisms; carries the complete outgoing star to the registered
 same-section complex; and transports paths, raw source cochains, path periods,
 and face coboundaries.  The theorem does not infer such an equivalence from
 geometric readout data.
+
+The finite incidence-certificate section corresponds to
+`Sigma_Same_Section_Transition_Star_Realization_from_Finite_Complex_Equivalence_full_proof.tex`.
+It expresses the same registration by exact source, target, and face-boundary
+matrix identities.  The resulting predicate is decidable on finite declared
+sections, but this formal decidability does not manufacture a certificate for
+an independently prescribed physical transition network.
 -/
 
 namespace Hardtest
@@ -371,6 +378,142 @@ structure TransitionComplexEquiv
       K'.faceBoundary (faceEquiv f) (edgeEquiv e) =
         K.faceBoundary f e
 
+/--
+The source-incidence matrix of a finite transition complex.
+
+Rows are vertices, columns are edges, and every column contains the indicator
+of its source vertex.
+-/
+def sourceIncidenceMatrix
+    {V E F : Type*} [DecidableEq V] [Fintype E] [Fintype F]
+    (K : FiniteTransportComplex V E F) : Matrix V E ℤ :=
+  fun v e => if K.source e = v then 1 else 0
+
+/--
+The target-incidence matrix of a finite transition complex.
+
+Rows are vertices, columns are edges, and every column contains the indicator
+of its target vertex.
+-/
+def targetIncidenceMatrix
+    {V E F : Type*} [DecidableEq V] [Fintype E] [Fintype F]
+    (K : FiniteTransportComplex V E F) : Matrix V E ℤ :=
+  fun v e => if K.target e = v then 1 else 0
+
+/-- The integral face-boundary matrix, with faces as rows and edges as columns. -/
+def faceBoundaryMatrix
+    {V E F : Type*} [Fintype E] [Fintype F]
+    (K : FiniteTransportComplex V E F) : Matrix F E ℤ :=
+  K.faceBoundary
+
+/--
+Exact matrix compatibility for a proposed vertex, edge, and face relabelling.
+
+`Matrix.reindex` is the coordinate-free Lean form of the three
+permutation-matrix identities in the TeX criterion:
+
+* `S' P_E = P_V S`,
+* `T' P_E = P_V T`,
+* `B' P_E = P_F B`.
+-/
+def TransitionIncidenceMatrixCompatible
+    {V E F V' E' F' : Type*}
+    [Fintype V] [Fintype E] [Fintype F]
+    [Fintype V'] [Fintype E'] [Fintype F']
+    [DecidableEq V] [DecidableEq V']
+    (K : FiniteTransportComplex V E F)
+    (K' : FiniteTransportComplex V' E' F')
+    (vertexEquiv : V ≃ V') (edgeEquiv : E ≃ E')
+    (faceEquiv : F ≃ F') : Prop :=
+  Matrix.reindex vertexEquiv edgeEquiv (sourceIncidenceMatrix K) =
+      sourceIncidenceMatrix K' ∧
+    Matrix.reindex vertexEquiv edgeEquiv (targetIncidenceMatrix K) =
+      targetIncidenceMatrix K' ∧
+    Matrix.reindex faceEquiv edgeEquiv (faceBoundaryMatrix K) =
+      faceBoundaryMatrix K'
+
+/--
+A finite incidence certificate for a same-section transition-complex
+registration.
+
+The three equivalences are candidate relabellings.  The compatibility field
+certifies all directed vertex-edge incidence and integral face-boundary data
+by exact finite matrix equality.
+-/
+structure TransitionIncidenceCertificate
+    (V E F V' E' F' : Type*)
+    [Fintype V] [Fintype E] [Fintype F]
+    [Fintype V'] [Fintype E'] [Fintype F']
+    [DecidableEq V] [DecidableEq V']
+    (K : FiniteTransportComplex V E F)
+    (K' : FiniteTransportComplex V' E' F') where
+  vertexEquiv : V ≃ V'
+  edgeEquiv : E ≃ E'
+  faceEquiv : F ≃ F'
+  compatible :
+    TransitionIncidenceMatrixCompatible K K'
+      vertexEquiv edgeEquiv faceEquiv
+
+/--
+Existence of the finite incidence certificate.  Unlike the certificate
+structure itself, this proposition forgets the chosen relabelling and is the
+finite existence question used by a concrete registration test.
+-/
+def HasTransitionIncidenceCertificate
+    {V E F V' E' F' : Type*}
+    [Fintype V] [Fintype E] [Fintype F]
+    [Fintype V'] [Fintype E'] [Fintype F']
+    [DecidableEq V] [DecidableEq V']
+    (K : FiniteTransportComplex V E F)
+    (K' : FiniteTransportComplex V' E' F') : Prop :=
+  ∃ vertexEquiv : V ≃ V', ∃ edgeEquiv : E ≃ E',
+    ∃ faceEquiv : F ≃ F',
+      TransitionIncidenceMatrixCompatible K K'
+        vertexEquiv edgeEquiv faceEquiv
+
+namespace TransitionIncidenceCertificate
+
+variable
+  {V E F V' E' F' : Type*}
+  [Fintype V] [Fintype E] [Fintype F]
+  [Fintype V'] [Fintype E'] [Fintype F']
+  [DecidableEq V] [DecidableEq V']
+  {K : FiniteTransportComplex V E F}
+  {K' : FiniteTransportComplex V' E' F'}
+
+/--
+The three exact matrix identities construct the incidence-preserving complex
+equivalence required by the transition-star transport theorem.
+-/
+def toTransitionComplexEquiv
+    (C : TransitionIncidenceCertificate V E F V' E' F' K K') :
+    TransitionComplexEquiv V E F V' E' F' K K' where
+  vertexEquiv := C.vertexEquiv
+  edgeEquiv := C.edgeEquiv
+  faceEquiv := C.faceEquiv
+  source_map := by
+    intro e
+    by_contra hne
+    have h := congrArg
+      (fun M => M (C.vertexEquiv (K.source e)) (C.edgeEquiv e))
+      C.compatible.1
+    simp [sourceIncidenceMatrix, Matrix.reindex_apply, hne] at h
+  target_map := by
+    intro e
+    by_contra hne
+    have h := congrArg
+      (fun M => M (C.vertexEquiv (K.target e)) (C.edgeEquiv e))
+      C.compatible.2.1
+    simp [targetIncidenceMatrix, Matrix.reindex_apply, hne] at h
+  faceBoundary_map := by
+    intro f e
+    have h := congrArg
+      (fun M => M (C.faceEquiv f) (C.edgeEquiv e))
+      C.compatible.2.2
+    simpa [faceBoundaryMatrix, Matrix.reindex_apply] using h.symm
+
+end TransitionIncidenceCertificate
+
 namespace TransitionComplexEquiv
 
 variable {d : ℕ}
@@ -378,6 +521,35 @@ variable {d : ℕ}
   [Fintype E] [Fintype F] [Fintype E'] [Fintype F']
   {K : FiniteTransportComplex V E F}
   {K' : FiniteTransportComplex V' E' F'}
+
+/--
+Every incidence-preserving complex equivalence supplies the three exact matrix
+identities.  Together with
+`TransitionIncidenceCertificate.toTransitionComplexEquiv`, this proves that
+the matrix certificate is neither weaker nor stronger than the paper-facing
+same-section equivalence.
+-/
+def toTransitionIncidenceCertificate
+    [Fintype V] [Fintype V'] [DecidableEq V] [DecidableEq V']
+    (I : TransitionComplexEquiv V E F V' E' F' K K') :
+    TransitionIncidenceCertificate V E F V' E' F' K K' where
+  vertexEquiv := I.vertexEquiv
+  edgeEquiv := I.edgeEquiv
+  faceEquiv := I.faceEquiv
+  compatible := by
+    refine ⟨?_, ?_, ?_⟩
+    · ext v' e'
+      rcases I.vertexEquiv.surjective v' with ⟨v, rfl⟩
+      rcases I.edgeEquiv.surjective e' with ⟨e, rfl⟩
+      simp [sourceIncidenceMatrix, Matrix.reindex_apply, I.source_map]
+    · ext v' e'
+      rcases I.vertexEquiv.surjective v' with ⟨v, rfl⟩
+      rcases I.edgeEquiv.surjective e' with ⟨e, rfl⟩
+      simp [targetIncidenceMatrix, Matrix.reindex_apply, I.target_map]
+    · ext f' e'
+      rcases I.faceEquiv.surjective f' with ⟨f, rfl⟩
+      rcases I.edgeEquiv.surjective e' with ⟨e, rfl⟩
+      simp [faceBoundaryMatrix, Matrix.reindex_apply, I.faceBoundary_map]
 
 /-- Map an edge list across an exact transition-complex equivalence. -/
 def mapPath
@@ -602,6 +774,76 @@ noncomputable def mapCompleteRegularCyclicOutgoingStar
         _ = I.edgeEquiv e := (I.edgeEquiv.apply_symm_apply e').symm
 
 end TransitionComplexEquiv
+
+/--
+The finite incidence certificate exists exactly when an incidence-preserving
+transition-complex equivalence exists.
+-/
+theorem hasTransitionIncidenceCertificate_iff
+    {V E F V' E' F' : Type*}
+    [Fintype V] [Fintype E] [Fintype F]
+    [Fintype V'] [Fintype E'] [Fintype F']
+    [DecidableEq V] [DecidableEq V']
+    (K : FiniteTransportComplex V E F)
+    (K' : FiniteTransportComplex V' E' F') :
+    HasTransitionIncidenceCertificate K K' ↔
+      Nonempty (TransitionComplexEquiv V E F V' E' F' K K') := by
+  constructor
+  · rintro ⟨vertexEquiv, edgeEquiv, faceEquiv, compatible⟩
+    exact ⟨(TransitionIncidenceCertificate.mk
+      vertexEquiv edgeEquiv faceEquiv compatible).toTransitionComplexEquiv⟩
+  · rintro ⟨I⟩
+    let C := I.toTransitionIncidenceCertificate
+    exact ⟨C.vertexEquiv, C.edgeEquiv, C.faceEquiv, C.compatible⟩
+
+/--
+On finite types with decidable equality, the exact incidence-certificate
+existence question is decidable by finite search over the three equivalences.
+-/
+instance instDecidableHasTransitionIncidenceCertificate
+    {V E F V' E' F' : Type*}
+    [Fintype V] [Fintype E] [Fintype F]
+    [Fintype V'] [Fintype E'] [Fintype F']
+    [DecidableEq V] [DecidableEq E] [DecidableEq F]
+    [DecidableEq V'] [DecidableEq E'] [DecidableEq F']
+    (K : FiniteTransportComplex V E F)
+    (K' : FiniteTransportComplex V' E' F') :
+    Decidable (HasTransitionIncidenceCertificate K K') := by
+  unfold HasTransitionIncidenceCertificate
+    TransitionIncidenceMatrixCompatible
+  infer_instance
+
+namespace TransitionIncidenceCertificateExamples
+
+/-- A one-edge directed section with two distinct endpoints. -/
+def directedEdgeComplex : FiniteTransportComplex Bool Unit Empty where
+  source := fun _ => false
+  target := fun _ => true
+  faceBoundary := fun f => nomatch f
+
+/--
+A same-cardinality section whose only edge is a loop.  This provides an
+incidence-level negative witness rather than a mere cardinality mismatch.
+-/
+def loopEdgeComplex : FiniteTransportComplex Bool Unit Empty where
+  source := fun _ => false
+  target := fun _ => false
+  faceBoundary := fun f => nomatch f
+
+/-- The identity registration passes the finite incidence certificate. -/
+theorem directedEdge_self_has_certificate :
+    HasTransitionIncidenceCertificate directedEdgeComplex directedEdgeComplex := by
+  decide
+
+/--
+No relabelling can identify a directed edge with distinct endpoints with a
+loop edge, even though the vertex, edge, and face cardinalities agree.
+-/
+theorem directedEdge_not_equiv_loop :
+    ¬ HasTransitionIncidenceCertificate directedEdgeComplex loopEdgeComplex := by
+  decide
+
+end TransitionIncidenceCertificateExamples
 
 /-- A raw source-equivariant cyclic transition orbit.
 
