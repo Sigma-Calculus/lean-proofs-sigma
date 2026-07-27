@@ -27,6 +27,12 @@ canonically induces that raw readout as an atomic indicator incidence.
 The construction does not assert that an independently prescribed physical
 transition network supplies the required source-edge orbit or the cyclic
 automorphism.  Those remain same-section realization data.
+
+The final criterion in this module separates orbit generation from
+completeness.  A source-preserving transition automorphism and one seed edge
+generate `d + 1` distinct outgoing edges, while an independently established
+local valence bound rules out additional outgoing edges.  Finite cardinality
+then constructs the complete regular cyclic outgoing star.
 -/
 
 namespace Hardtest
@@ -234,6 +240,98 @@ theorem outgoingEdge_unique_cyclic_shift
   S.orbit_complete e.1 e.2
 
 end CompleteRegularCyclicOutgoingStar
+
+/--
+A cyclic outgoing orbit together with an independent local valence bound.
+
+The orbit data provide `d + 1` distinct admissible outgoing edges.  The
+cardinality bound concerns the complete outgoing star, not the chosen orbit,
+so it is an independent finite exhaustion certificate rather than a restatement
+of orbit completeness.  The paper-facing counterpart is the
+valence-bounded equivariant admissibility criterion in
+`discrete_noether_sigma_v3.tex`.
+-/
+structure ValenceBoundedCyclicOutgoingOrbit
+    (d : ℕ) (V E F : Type*) [DecidableEq V] [Fintype E] [Fintype F] where
+  complex : FiniteTransportComplex V E F
+  transition : TransitionComplexAutomorphism V E F complex
+  startVertex : V
+  startFixed :
+    transition.vertexEquiv startVertex = startVertex
+  baseEdge : E
+  baseEdge_source :
+    complex.source baseEdge = startVertex
+  orbit_injective :
+    Function.Injective
+      (fun i : Fin (d + 1) =>
+        (transition.edgeEquiv ^ i.val) baseEdge)
+  outgoing_card_le :
+    Fintype.card (OutgoingEdge complex startVertex) ≤ d + 1
+
+namespace ValenceBoundedCyclicOutgoingOrbit
+
+variable {d : ℕ} {V E F : Type*} [DecidableEq V] [Fintype E] [Fintype F]
+
+/-- The cyclic seed orbit, typed in the complete outgoing star. -/
+def sourceEdge
+    (O : ValenceBoundedCyclicOutgoingOrbit d V E F)
+    (i : Fin (d + 1)) :
+    OutgoingEdge O.complex O.startVertex :=
+  ⟨(O.transition.edgeEquiv ^ i.val) O.baseEdge,
+    O.transition.iterateEdge_source_of_fixed
+      i.val O.baseEdge O.startVertex O.baseEdge_source O.startFixed⟩
+
+/-- Distinct orbit indices give distinct outgoing edges. -/
+theorem sourceEdge_injective
+    (O : ValenceBoundedCyclicOutgoingOrbit d V E F) :
+    Function.Injective O.sourceEdge := by
+  intro i j hij
+  apply O.orbit_injective
+  exact congrArg Subtype.val hij
+
+/--
+The complete outgoing star has exactly `d + 1` edges.  The lower bound comes
+from the injective cyclic orbit; the upper bound is the independent local
+valence certificate.
+-/
+theorem outgoing_card_eq
+    (O : ValenceBoundedCyclicOutgoingOrbit d V E F) :
+    Fintype.card (OutgoingEdge O.complex O.startVertex) = d + 1 := by
+  apply Nat.le_antisymm O.outgoing_card_le
+  simpa using Fintype.card_le_of_injective O.sourceEdge O.sourceEdge_injective
+
+/-- The cyclic seed orbit exhausts the complete outgoing star. -/
+theorem sourceEdge_bijective
+    (O : ValenceBoundedCyclicOutgoingOrbit d V E F) :
+    Function.Bijective O.sourceEdge := by
+  apply (Fintype.bijective_iff_injective_and_card O.sourceEdge).2
+  refine ⟨O.sourceEdge_injective, ?_⟩
+  rw [Fintype.card_fin, O.outgoing_card_eq]
+
+/--
+An injective cyclic seed orbit and the independent valence bound canonically
+construct an intrinsic complete regular cyclic outgoing star.
+-/
+def toCompleteRegularCyclicOutgoingStar
+    (O : ValenceBoundedCyclicOutgoingOrbit d V E F) :
+    CompleteRegularCyclicOutgoingStar d V E F where
+  complex := O.complex
+  transition := O.transition
+  startVertex := O.startVertex
+  startFixed := O.startFixed
+  baseEdge := O.baseEdge
+  baseEdge_source := O.baseEdge_source
+  orbit_complete := by
+    intro e he
+    let outgoing : OutgoingEdge O.complex O.startVertex := ⟨e, he⟩
+    rcases O.sourceEdge_bijective.2 outgoing with ⟨i, hi⟩
+    refine ⟨i, congrArg Subtype.val hi, ?_⟩
+    intro j hj
+    apply O.sourceEdge_injective
+    apply Subtype.ext
+    exact hj.trans (congrArg Subtype.val hi).symm
+
+end ValenceBoundedCyclicOutgoingOrbit
 
 /-- A raw source-equivariant cyclic transition orbit.
 
@@ -750,14 +848,12 @@ theorem rawTransitionComplexAutomorphism_sourceEdge_orbit
   fin_cases j <;> apply Subtype.ext <;> rfl
 
 /--
-The concrete zero event satisfies the intrinsic complete regular cyclic
-outgoing-star criterion.  In particular, the source-axis frame is recovered
-from the transition action and one base edge rather than supplied as an
-independent four-edge labelling.
+The coordinate-cycle orbit and the independently proved four-edge valence
+bound inhabit the generic valence-bounded criterion.
 -/
-noncomputable def completeRegularCyclicOutgoingStar
+noncomputable def valenceBoundedCyclicOutgoingOrbit
     (L : ℕ) (hL : 4 ≤ L) :
-    CompleteRegularCyclicOutgoingStar 3
+    ValenceBoundedCyclicOutgoingOrbit 3
       (SigmaCoord4 L) (SigmaFineEdge4 L) Empty where
   complex := sigmaTransitionSkeleton L
   transition := rawTransitionComplexAutomorphism L hL
@@ -765,21 +861,34 @@ noncomputable def completeRegularCyclicOutgoingStar
   startFixed := coordCycle_baseState0 L hL
   baseEdge := initialSourceEdge L hL 0
   baseEdge_source := initialSourceEdge_source L hL 0
-  orbit_complete := by
-    intro e hsource
-    let i := sigmaFineEdgeAxis e
-    refine ⟨i, ?_, ?_⟩
-    · change
-        ((rawTransitionComplexAutomorphism L hL).edgeEquiv ^ i.val)
-            (initialSourceEdge L hL 0) =
-          e
-      rw [rawTransitionComplexAutomorphism_sourceEdge_orbit]
-      exact (edge_eq_initialSourceEdge_of_source_eq
-        L hL e hsource).symm
-    · intro j hj
-      rw [rawTransitionComplexAutomorphism_sourceEdge_orbit] at hj
-      have haxis := congrArg sigmaFineEdgeAxis hj
-      simpa [i] using haxis
+  orbit_injective := by
+    intro i j hij
+    change
+      ((rawTransitionComplexAutomorphism L hL).edgeEquiv ^ i.val)
+          (initialSourceEdge L hL 0) =
+        ((rawTransitionComplexAutomorphism L hL).edgeEquiv ^ j.val)
+          (initialSourceEdge L hL 0) at hij
+    rw [rawTransitionComplexAutomorphism_sourceEdge_orbit,
+      rawTransitionComplexAutomorphism_sourceEdge_orbit] at hij
+    exact initialSourceEdge_injective L hL hij
+  outgoing_card_le := by
+    have hcard :
+        Fintype.card (InitialOutgoingEdge L hL) = 4 := by
+      simpa using (Fintype.card_congr (initialSourceEdgeEquiv L hL)).symm
+    exact hcard.le
+
+/--
+The concrete zero event satisfies the intrinsic complete regular cyclic
+outgoing-star criterion through the valence-bounded constructor.  In
+particular, the source-axis frame is recovered from the transition action, one
+base edge, and the independently verified complete-star cardinality.
+-/
+noncomputable def completeRegularCyclicOutgoingStar
+    (L : ℕ) (hL : 4 ≤ L) :
+    CompleteRegularCyclicOutgoingStar 3
+      (SigmaCoord4 L) (SigmaFineEdge4 L) Empty :=
+  (valenceBoundedCyclicOutgoingOrbit L hL)
+    |>.toCompleteRegularCyclicOutgoingStar
 
 /-- The generic intrinsic-star equivalence recovers the complete concrete
 outgoing star at the zero event. -/
