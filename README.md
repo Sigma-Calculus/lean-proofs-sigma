@@ -74,16 +74,22 @@ cd lean-proofs-sigma
     augmentation-null source cochain required by the confluence theorem.  The
     concrete four-coordinate model constructs this raw incidence on actual
     Sigma fine-edge histories and proves that its augmentation projection is
-    exactly the centered source marking.  The module also constructs the maximal
+    exactly the centered source marking.  On the complete domain of positive
+    histories from the common zero state to the common unit state, it proves
+    that the raw period is determined exactly by the first source axis and
+    that the resulting quotient has precisely four intrinsic period classes.
+    The cyclic histories are therefore representatives rather than an
+    additional class selection.  The module also constructs the maximal
     source-admissible face hull and proves that distinct source-history
     comparison loops either remain non-boundaries or force nonzero source flux
     through any proposed filling.
   - Scope: the source-generated coordinate model is constructive.  An
     independently prescribed physical transition network still requires a
-    same-section identification, up to simultaneous source relabeling, with its
-    raw atomic incidence, distinguished confluent histories, and
-    source-admissible face hull.  An exact state potential alone cannot supply
-    distinct same-endpoint source periods.
+    same-section identification, up to simultaneous source relabeling, of its
+    positive history domain and raw atomic source-period quotient with the
+    canonical four-class quotient, together with its source-admissible face
+    hull.  An exact state potential alone cannot supply distinct same-endpoint
+    source periods.
 
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`

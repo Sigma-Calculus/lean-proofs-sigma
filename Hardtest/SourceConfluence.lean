@@ -27,6 +27,9 @@ argument.  It separates two levels:
   path representatives.
 * `RawAtomicSourceIncidenceCertificate` constructs the centered source
   cochain from a raw transition-chain incidence by augmentation projection.
+* the complete positive-history quotient of the concrete four-coordinate
+  model is proved equivalent to its four intrinsic source axes, eliminating
+  any additional distinguished-history selection inside that model.
 
 The parallel-channel certificate alone does not instantiate the transition
 criterion.  The concrete rank-three namespace does.
@@ -1808,6 +1811,224 @@ noncomputable def rawSourceMarking (L : ℕ) (hL : 4 ≤ L) :
     else
       0
 
+/-- The uncentered atomic vector selected by one of the four source axes. -/
+def rawAtom4 (i j : Fin 4) : ℝ :=
+  if i = j then 1 else 0
+
+/-- Distinct source axes determine distinct uncentered atomic vectors. -/
+theorem rawAtom4_injective : Function.Injective rawAtom4 := by
+  intro i k h
+  by_contra hik
+  have hki : k ≠ i := by
+    exact fun hki => hik hki.symm
+  have hi := congrFun h i
+  simp [rawAtom4, hki] at hi
+
+/-- Once a positive concrete history has left the common zero state, its raw
+source period remains zero.  Strict event-time increase prevents any later
+edge source from returning to that state. -/
+theorem rawSourceMarking_pathIntegral_eq_zero_of_later_start
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4)
+    {startVertex finishVertex : SigmaCoord4 L}
+    {edges : List (SigmaFineEdge4 L)}
+    (hpath :
+      (sigmaTransitionSkeleton L).IsEdgePathFrom
+        startVertex edges finishVertex)
+    (htime :
+      sigmaCoord4Time (baseState0 L hL) <
+        sigmaCoord4Time startVertex)
+    (hpositive :
+      ∀ e, e ∈ edges →
+        0 < (concreteSigmaAdmissibleDynamics4 L hL).tension e) :
+    pathIntegral ((rawSourceMarking L hL).component j) edges = 0 := by
+  induction edges generalizing startVertex with
+  | nil =>
+      simp [pathIntegral]
+  | cons e rest ih =>
+      rcases hpath with ⟨hsource, htail⟩
+      change sigmaFineEdgeSource e = startVertex at hsource
+      change (sigmaTransitionSkeleton L).IsEdgePathFrom
+        (sigmaFineEdgeTarget e) rest finishVertex at htail
+      have hsource_ne :
+          sigmaFineEdgeSource e ≠ baseState0 L hL := by
+        rw [hsource]
+        intro heq
+        rw [heq] at htime
+        exact (lt_irrefl _ htime)
+      have hedgePositive :
+          0 < sigmaOrientationTension e := by
+        simpa [concreteSigmaAdmissibleDynamics4] using
+          hpositive e (by simp)
+      have hedgeTime :
+          sigmaCoord4Time (sigmaFineEdgeSource e) <
+            sigmaCoord4Time (sigmaFineEdgeTarget e) := by
+        apply sub_pos.mp
+        simpa [sigmaCoord4Time_target_sub_source] using hedgePositive
+      have htarget :
+          sigmaCoord4Time (baseState0 L hL) <
+            sigmaCoord4Time (sigmaFineEdgeTarget e) := by
+        have hstartToTarget :
+            sigmaCoord4Time startVertex <
+              sigmaCoord4Time (sigmaFineEdgeTarget e) := by
+          simpa [hsource] using hedgeTime
+        exact lt_trans htime hstartToTarget
+      have htailPositive :
+          ∀ f, f ∈ rest →
+            0 < (concreteSigmaAdmissibleDynamics4 L hL).tension f := by
+        intro f hf
+        exact hpositive f (by simp [hf])
+      rw [pathIntegral]
+      rw [ih htail htarget htailPositive]
+      simp [rawSourceMarking, hsource_ne]
+
+/-- Every nonempty positive history leaving the common zero state has the raw
+source period of its first edge axis.  No choice of the later microscopic path
+can alter that period. -/
+theorem rawSourceMarking_positive_path_period
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4)
+    {finishVertex : SigmaCoord4 L}
+    {edges : List (SigmaFineEdge4 L)}
+    (hpath :
+      (sigmaTransitionSkeleton L).IsEdgePathFrom
+        (baseState0 L hL) edges finishVertex)
+    (hnonempty : edges ≠ [])
+    (hpositive :
+      ∀ e, e ∈ edges →
+        0 < (concreteSigmaAdmissibleDynamics4 L hL).tension e) :
+    pathIntegral ((rawSourceMarking L hL).component j) edges =
+      rawAtom4 (sigmaFineEdgeAxis (edges.head hnonempty)) j := by
+  cases edges with
+  | nil =>
+      exact False.elim (hnonempty rfl)
+  | cons e rest =>
+      rcases hpath with ⟨hsource, htail⟩
+      change sigmaFineEdgeSource e = baseState0 L hL at hsource
+      change (sigmaTransitionSkeleton L).IsEdgePathFrom
+        (sigmaFineEdgeTarget e) rest finishVertex at htail
+      have hedgePositive :
+          0 < sigmaOrientationTension e := by
+        simpa [concreteSigmaAdmissibleDynamics4] using
+          hpositive e (by simp)
+      have hedgeTime :
+          sigmaCoord4Time (sigmaFineEdgeSource e) <
+            sigmaCoord4Time (sigmaFineEdgeTarget e) := by
+        apply sub_pos.mp
+        simpa [sigmaCoord4Time_target_sub_source] using hedgePositive
+      have htarget :
+          sigmaCoord4Time (baseState0 L hL) <
+            sigmaCoord4Time (sigmaFineEdgeTarget e) := by
+        simpa [hsource] using hedgeTime
+      have htailPositive :
+          ∀ f, f ∈ rest →
+            0 < (concreteSigmaAdmissibleDynamics4 L hL).tension f := by
+        intro f hf
+        exact hpositive f (by simp [hf])
+      have htailZero :=
+        rawSourceMarking_pathIntegral_eq_zero_of_later_start
+          L hL j htail htarget htailPositive
+      rw [pathIntegral, htailZero]
+      simp [rawSourceMarking, rawAtom4, hsource]
+
+/-- Positive same-endpoint histories in the canonical four-coordinate model.
+This is the complete history domain used for the intrinsic period-class
+classification, not a selected cyclic subfamily. -/
+structure PositiveSameEndpointHistory (L : ℕ) (hL : 4 ≤ L) where
+  history : SigmaTransitionHistory4 L
+  start_eq : history.startVertex = baseState0 L hL
+  finish_eq : history.finishVertex = baseState4 L hL
+  positive :
+    ∀ e, e ∈ history.edges →
+      0 < (concreteSigmaAdmissibleDynamics4 L hL).tension e
+
+namespace PositiveSameEndpointHistory
+
+/-- The source axis of the unique first edge of a positive history. -/
+def firstAxis {L : ℕ} {hL : 4 ≤ L}
+    (H : PositiveSameEndpointHistory L hL) : Fin 4 :=
+  sigmaFineEdgeAxis (H.history.edges.head H.history.nonempty)
+
+/-- The complete raw source-period vector of a positive history. -/
+noncomputable def rawPeriodVector {L : ℕ} {hL : 4 ≤ L}
+    (H : PositiveSameEndpointHistory L hL) : Fin 4 → ℝ :=
+  fun j =>
+    pathIntegral ((rawSourceMarking L hL).component j) H.history.edges
+
+/-- The complete raw period of every positive same-endpoint history is the
+atomic vector of its first source axis. -/
+theorem rawPeriodVector_eq_rawAtom
+    {L : ℕ} {hL : 4 ≤ L}
+    (H : PositiveSameEndpointHistory L hL) :
+    H.rawPeriodVector = rawAtom4 H.firstAxis := by
+  funext j
+  exact rawSourceMarking_positive_path_period L hL j
+    (by simpa [H.start_eq] using H.history.pathValid)
+    H.history.nonempty H.positive
+
+/-- Complete raw source periods agree exactly when first source axes agree. -/
+theorem rawPeriodVector_eq_iff_firstAxis_eq
+    {L : ℕ} {hL : 4 ≤ L}
+    (H H' : PositiveSameEndpointHistory L hL) :
+    H.rawPeriodVector = H'.rawPeriodVector ↔
+      H.firstAxis = H'.firstAxis := by
+  rw [H.rawPeriodVector_eq_rawAtom, H'.rawPeriodVector_eq_rawAtom]
+  constructor
+  · intro h
+    exact rawAtom4_injective h
+  · intro h
+    rw [h]
+
+/-- Complete raw-period equality on the full positive same-endpoint history
+domain. -/
+noncomputable def SameRawSourcePeriod
+    {L : ℕ} {hL : 4 ≤ L}
+    (H H' : PositiveSameEndpointHistory L hL) : Prop :=
+  H.rawPeriodVector = H'.rawPeriodVector
+
+/-- Raw-period equality is an equivalence relation. -/
+theorem sameRawSourcePeriod_equivalence
+    {L : ℕ} {hL : 4 ≤ L} :
+    Equivalence
+      (SameRawSourcePeriod :
+        PositiveSameEndpointHistory L hL →
+          PositiveSameEndpointHistory L hL → Prop) := by
+  constructor
+  · intro H
+    rfl
+  · intro H H' h
+    exact h.symm
+  · intro H H' H'' h h'
+    exact h.trans h'
+
+/-- The complete source-period setoid on positive concrete histories. -/
+noncomputable def rawSourcePeriodSetoid
+    (L : ℕ) (hL : 4 ≤ L) :
+    Setoid (PositiveSameEndpointHistory L hL) where
+  r := SameRawSourcePeriod
+  iseqv := sameRawSourcePeriod_equivalence
+
+/-- Positive concrete histories modulo their complete raw source periods. -/
+abbrev RawSourcePeriodClass (L : ℕ) (hL : 4 ≤ L) :=
+  Quotient (rawSourcePeriodSetoid L hL)
+
+/-- A raw-period class has an intrinsic first source axis. -/
+noncomputable def rawSourcePeriodClassFirstAxis
+    {L : ℕ} {hL : 4 ≤ L} :
+    RawSourcePeriodClass L hL → Fin 4 :=
+  Quotient.lift firstAxis (by
+    intro H H' h
+    exact (rawPeriodVector_eq_iff_firstAxis_eq H H').mp h)
+
+@[simp]
+theorem rawSourcePeriodClassFirstAxis_mk
+    {L : ℕ} {hL : 4 ≤ L}
+    (H : PositiveSameEndpointHistory L hL) :
+    rawSourcePeriodClassFirstAxis
+        (Quotient.mk (rawSourcePeriodSetoid L hL) H) =
+      H.firstAxis :=
+  rfl
+
+end PositiveSameEndpointHistory
+
 /-- Coordinate and source rotation preserve the raw atomic incidence. -/
 theorem rawSourceMarking_equivariant
     (L : ℕ) (hL : 4 ≤ L) (i : Fin 4) (e : SigmaFineEdge4 L) :
@@ -2013,6 +2234,72 @@ theorem rawSourceMarking_history_period
       subst j
       exact (p.symm_apply_eq.mpr hp.symm).symm
   exact if_congr hiff rfl rfl
+
+/-- Every cyclic representative is an element of the complete positive
+same-endpoint history domain. -/
+noncomputable def cyclicPositiveHistory
+    (L : ℕ) (hL : 4 ≤ L) (i : Fin 4) :
+    PositiveSameEndpointHistory L hL where
+  history := (cyclicHistoryOrbit L hL).history i
+  start_eq := by
+    simpa [cyclicHistoryOrbit, baseHistory] using
+      (cyclicHistoryOrbit L hL).history_start i
+  finish_eq := by
+    simpa [cyclicHistoryOrbit, baseHistory] using
+      (cyclicHistoryOrbit L hL).history_finish i
+  positive := by
+    simpa [cyclicHistoryOrbit] using
+      (cyclicHistoryOrbit L hL).history_positive i
+
+/-- The cyclic representative indexed by `i` has the complete raw period of
+axis `i`. -/
+theorem cyclicPositiveHistory_rawPeriodVector
+    (L : ℕ) (hL : 4 ≤ L) (i : Fin 4) :
+    (cyclicPositiveHistory L hL i).rawPeriodVector =
+      rawAtom4 i := by
+  funext j
+  simpa [PositiveSameEndpointHistory.rawPeriodVector,
+    cyclicPositiveHistory] using
+      rawSourceMarking_history_period L hL i j
+
+/-- The first source axis of the cyclic representative is its intrinsic
+source index. -/
+theorem cyclicPositiveHistory_firstAxis
+    (L : ℕ) (hL : 4 ≤ L) (i : Fin 4) :
+    (cyclicPositiveHistory L hL i).firstAxis = i := by
+  apply rawAtom4_injective
+  calc
+    rawAtom4 (cyclicPositiveHistory L hL i).firstAxis =
+        (cyclicPositiveHistory L hL i).rawPeriodVector :=
+      (cyclicPositiveHistory L hL i).rawPeriodVector_eq_rawAtom.symm
+    _ = rawAtom4 i :=
+      cyclicPositiveHistory_rawPeriodVector L hL i
+
+/-- Complete raw source-period classes of all positive histories in the
+canonical four-coordinate model are canonically equivalent to the four source
+axes.  The cyclic histories merely provide representatives; they do not
+define or select the quotient classes. -/
+noncomputable def rawSourcePeriodClassEquivAxis
+    (L : ℕ) (hL : 4 ≤ L) :
+    PositiveSameEndpointHistory.RawSourcePeriodClass L hL ≃ Fin 4 where
+  toFun :=
+    PositiveSameEndpointHistory.rawSourcePeriodClassFirstAxis
+  invFun := fun i =>
+    Quotient.mk
+      (PositiveSameEndpointHistory.rawSourcePeriodSetoid L hL)
+      (cyclicPositiveHistory L hL i)
+  left_inv := by
+    intro q
+    refine Quotient.inductionOn q ?_
+    intro H
+    apply Quotient.sound
+    exact
+      (PositiveSameEndpointHistory.rawPeriodVector_eq_iff_firstAxis_eq
+        (cyclicPositiveHistory L hL H.firstAxis) H).mpr
+        (cyclicPositiveHistory_firstAxis L hL H.firstAxis)
+  right_inv := by
+    intro i
+    exact cyclicPositiveHistory_firstAxis L hL i
 
 /-- The actual four-coordinate Sigma transition skeleton supplies the raw
 atomic incidence certificate whose distinguished periods are the four basis
