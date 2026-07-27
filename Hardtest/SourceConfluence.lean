@@ -22,6 +22,9 @@ argument.  It separates two levels:
 * `SourcePeriodClass` quotients admissible same-endpoint histories by their
   complete registered source-period vectors and proves the corresponding
   universal readout factorization.
+* `FiniteSourcePeriodCarrierRegistration` packages the finite class-level
+  data needed by the simplex-carrier normal form without selecting microscopic
+  path representatives.
 
 The parallel-channel certificate alone does not instantiate the transition
 criterion.  The concrete rank-three namespace does.
@@ -39,10 +42,11 @@ rank-`d` statement, the finite parallel-channel certificate, the construction
 of source-indexed Sigma histories from a cyclic equivariant history orbit, and
 a concrete four-coordinate rank-three realization.  It proves that the
 distinguished source-period classes retain the augmentation rank independently
-of path representatives.  It also proves the topology/source-defect alternative
-for face fillings and constructs the maximal source-admissible face hull.  It
-does not identify an independently prescribed physical transition network with
-the concrete model; that same-section registration remains separate.
+of path representatives, and that their centered readout has the canonical
+simplex Gram matrix.  It also proves the topology/source-defect alternative for
+face fillings and constructs the maximal source-admissible face hull.  It does
+not identify an independently prescribed physical transition network with the
+concrete model; that same-section registration remains separate.
 -/
 
 namespace Hardtest
@@ -177,6 +181,99 @@ theorem centered_span_finrank (d : ℕ) :
     Module.finrank ℝ (Submodule.span ℝ (Set.range (centeredAtom d))) = d := by
   rw [centered_span_eq_augmentation_ker]
   exact augmentation_ker_finrank d
+
+/-- The Gram matrix of the centered source atoms is the centered projection
+matrix itself. -/
+theorem centeredAtom_gram (d : ℕ) (i k : Fin (d + 1)) :
+    ∑ j, centeredAtom d i j * centeredAtom d k j =
+      centeredAtom d i k := by
+  calc
+    ∑ j, centeredAtom d i j * centeredAtom d k j =
+        ∑ j, centeredAtom d i j * centeredAtom d j k := by
+          apply Finset.sum_congr rfl
+          intro j _
+          congr 1
+          simp [centeredAtom, eq_comm]
+    _ = centeredAtom d i k -
+        (∑ j, centeredAtom d i j) / (d + 1 : ℝ) :=
+      centeredAtom_combination_apply d (centeredAtom d i) k
+    _ = centeredAtom d i k := by
+      rw [centeredAtom_component_sum]
+      simp
+
+/-- A finite payload sufficient to register distinguished source-period
+classes at the carrier layer.  It records classes and their complete readout,
+but does not require a preferred microscopic path representative. -/
+structure FiniteSourcePeriodCarrierRegistration (d : ℕ) where
+  Carrier : Type*
+  distinguished : Fin (d + 1) → Carrier
+  readout : Carrier → Fin (d + 1) → ℝ
+  commonOffset : Fin (d + 1) → ℝ
+  readout_distinguished :
+    ∀ i j,
+      readout (distinguished i) j =
+        commonOffset j + centeredAtom d i j
+
+namespace FiniteSourcePeriodCarrierRegistration
+
+variable {d : ℕ}
+
+/-- The centered readout of the distinguished period classes. -/
+def centeredReadout (R : FiniteSourcePeriodCarrierRegistration d) :
+    Fin (d + 1) → Fin (d + 1) → ℝ :=
+  fun i j => R.readout (R.distinguished i) j - R.commonOffset j
+
+/-- Centering the registered readout recovers the canonical augmentation
+atoms exactly. -/
+theorem centeredReadout_eq_centeredAtom
+    (R : FiniteSourcePeriodCarrierRegistration d) :
+    R.centeredReadout = centeredAtom d := by
+  funext i j
+  simp only [centeredReadout]
+  rw [R.readout_distinguished]
+  ring
+
+/-- Distinguished period classes are pairwise distinct. -/
+theorem distinguished_injective
+    (R : FiniteSourcePeriodCarrierRegistration d) :
+    Function.Injective R.distinguished := by
+  intro i k h
+  apply centeredAtom_injective d
+  have hreadout : R.readout (R.distinguished i) =
+      R.readout (R.distinguished k) :=
+    congrArg R.readout h
+  funext j
+  have hj := congrFun hreadout j
+  rw [R.readout_distinguished, R.readout_distinguished] at hj
+  linarith
+
+/-- The finite registration carries the exact augmentation rank
+certificate. -/
+theorem hasAugmentationRankCertificate
+    (R : FiniteSourcePeriodCarrierRegistration d) :
+    HasAugmentationRankCertificate d R.centeredReadout := by
+  rw [R.centeredReadout_eq_centeredAtom]
+  exact centeredAtom_hasAugmentationRankCertificate d
+
+/-- The centered registration spans a carrier of dimension `d`. -/
+theorem centeredSpan_finrank
+    (R : FiniteSourcePeriodCarrierRegistration d) :
+    Module.finrank ℝ
+      (Submodule.span ℝ (Set.range R.centeredReadout)) = d := by
+  rw [R.centeredReadout_eq_centeredAtom]
+  exact centered_span_finrank d
+
+/-- The centered registration has the regular-simplex Gram matrix before
+normalization. -/
+theorem centeredReadout_gram
+    (R : FiniteSourcePeriodCarrierRegistration d)
+    (i k : Fin (d + 1)) :
+    ∑ j, R.centeredReadout i j * R.centeredReadout k j =
+      centeredAtom d i k := by
+  rw [R.centeredReadout_eq_centeredAtom]
+  exact centeredAtom_gram d i k
+
+end FiniteSourcePeriodCarrierRegistration
 
 /-- Two vertices suffice for the canonical parallel-channel model. -/
 abbrev ParallelVertex := Bool
@@ -407,6 +504,17 @@ theorem registeredSourcePeriodClass_injective
   rw [C.sourcePeriodClassReadout_registered,
     C.sourcePeriodClassReadout_registered] at hj
   linarith
+
+/-- Every source-balanced confluence certificate canonically supplies the
+finite carrier-registration payload on its source-period quotient. -/
+def finiteSourcePeriodCarrierRegistration
+    (C : SourceBalancedConfluenceCertificate d V E F) :
+    FiniteSourcePeriodCarrierRegistration d where
+  Carrier := C.SourcePeriodClass
+  distinguished := C.registeredSourcePeriodClass
+  readout := C.sourcePeriodClassReadout
+  commonOffset := C.commonOffset
+  readout_distinguished := C.sourcePeriodClassReadout_registered
 
 /-- The signed comparison loop formed by a source-indexed path followed by
 the reverse of a second source-indexed path with the same endpoints. -/

@@ -64,9 +64,12 @@ cd lean-proofs-sigma
     concrete four-coordinate Sigma dynamics.  The source-period quotient
     identifies same-endpoint histories exactly when every registered source
     period agrees and proves the universal factorization of period-invariant
-    readouts.  The module also constructs the maximal source-admissible face
-    hull and proves that distinct source-history comparison loops either remain
-    non-boundaries or force nonzero source flux through any proposed filling.
+    readouts.  Its finite carrier-registration interface proves that the
+    distinguished period classes have exact augmentation rank and the canonical
+    simplex Gram matrix without selecting path representatives.  The module
+    also constructs the maximal source-admissible face hull and proves that
+    distinct source-history comparison loops either remain non-boundaries or
+    force nonzero source flux through any proposed filling.
   - Scope: the source-generated coordinate model is constructive; identifying
     an independently prescribed physical transition network with that model
     remains a separate same-section registration problem.
@@ -144,8 +147,9 @@ The canonical reusable module path for the finite Sigma patch visibility
 threshold bridge is `Hardtest/PatchVisibility.lean`.
 
 The canonical reusable module path for the finite source-confluence
-certificate, the source-period quotient, the concrete rank-three Sigma
-realization, and the source-admissible face-hull criterion is
+certificate, the finite source-period carrier registration, the source-period
+quotient, the concrete rank-three Sigma realization, and the source-admissible
+face-hull criterion is
 `Hardtest/SourceConfluence.lean`.
 
 The canonical reusable module path for the reduced Noether paper is
