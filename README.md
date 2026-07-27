@@ -66,13 +66,17 @@ cd lean-proofs-sigma
     period agrees and proves the universal factorization of period-invariant
     readouts.  Its finite carrier-registration interface proves that the
     distinguished period classes have exact augmentation rank and the canonical
-    simplex Gram matrix without selecting path representatives.  The module
-    also constructs the maximal source-admissible face hull and proves that
-    distinct source-history comparison loops either remain non-boundaries or
-    force nonzero source flux through any proposed filling.
+    simplex Gram matrix without selecting path representatives.  A raw atomic
+    source-incidence constructor additionally projects common-mode transition
+    incidence to the closed augmentation-null source cochain required by the
+    confluence theorem.  The module also constructs the maximal
+    source-admissible face hull and proves that distinct source-history
+    comparison loops either remain non-boundaries or force nonzero source flux
+    through any proposed filling.
   - Scope: the source-generated coordinate model is constructive; identifying
     an independently prescribed physical transition network with that model
-    remains a separate same-section registration problem.
+    still requires a same-section raw source incidence and distinguished
+    confluent histories.
 
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`
@@ -146,10 +150,10 @@ visibility criterion is `Hardtest/HorizonRadiationVisibility.lean`.
 The canonical reusable module path for the finite Sigma patch visibility
 threshold bridge is `Hardtest/PatchVisibility.lean`.
 
-The canonical reusable module path for the finite source-confluence
-certificate, the finite source-period carrier registration, the source-period
-quotient, the concrete rank-three Sigma realization, and the source-admissible
-face-hull criterion is
+The canonical reusable module path for the raw atomic source-incidence
+projection, finite source-confluence certificate, finite source-period carrier
+registration, source-period quotient, concrete rank-three Sigma realization,
+and source-admissible face-hull criterion is
 `Hardtest/SourceConfluence.lean`.
 
 The canonical reusable module path for the reduced Noether paper is

@@ -25,6 +25,8 @@ argument.  It separates two levels:
 * `FiniteSourcePeriodCarrierRegistration` packages the finite class-level
   data needed by the simplex-carrier normal form without selecting microscopic
   path representatives.
+* `RawAtomicSourceIncidenceCertificate` constructs the centered source
+  cochain from a raw transition-chain incidence by augmentation projection.
 
 The parallel-channel certificate alone does not instantiate the transition
 criterion.  The concrete rank-three namespace does.
@@ -46,7 +48,9 @@ of path representatives, and that their centered readout has the canonical
 simplex Gram matrix.  It also proves the topology/source-defect alternative for
 face fillings and constructs the maximal source-admissible face hull.  It does
 not identify an independently prescribed physical transition network with the
-concrete model; that same-section registration remains separate.
+concrete model.  On such a network the raw transition-chain source incidence,
+its common-mode face balance, and the distinguished confluent histories remain
+same-section realization data.
 -/
 
 namespace Hardtest
@@ -649,6 +653,142 @@ def sourceAdmissibleFaceHull_include
     (f : F) (hf : ∀ j, K.faceCoboundary (q j) f = 0) :
     SourceAdmissibleFace K q :=
   ⟨f, hf⟩
+
+/-- Path integration commutes with a finite linear combination of edge
+cochains. -/
+theorem pathIntegral_finite_linearCombination
+    {I E : Type*} [Fintype I]
+    (a : I → ℝ) (q : I → E → ℝ) (edges : List E) :
+    pathIntegral (fun e => ∑ i, a i * q i e) edges =
+      ∑ i, a i * pathIntegral (q i) edges := by
+  induction edges with
+  | nil =>
+      simp [pathIntegral]
+  | cons e rest ih =>
+      simp only [pathIntegral, ih]
+      rw [← Finset.sum_add_distrib]
+      apply Finset.sum_congr rfl
+      intro i _
+      ring
+
+/-- Cellular coboundary commutes with a finite linear combination of edge
+cochains. -/
+theorem faceCoboundary_finite_linearCombination
+    {I V E F : Type*} [Fintype I] [Fintype E] [Fintype F]
+    (K : FiniteTransportComplex V E F)
+    (a : I → ℝ) (q : I → E → ℝ) (f : F) :
+    K.faceCoboundary (fun e => ∑ i, a i * q i e) f =
+      ∑ i, a i * K.faceCoboundary (q i) f := by
+  simp only [faceCoboundary, Finset.mul_sum]
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro i _
+  apply Finset.sum_congr rfl
+  intro e _
+  ring
+
+/-- A theorem-level raw atomic source incidence on a finite transition
+complex.  Its face flux may contain a common source mode, while its
+distinguished path periods differ by the canonical source atoms.
+
+This structure corresponds to the raw source-incidence criterion in
+`discrete_noether_sigma_v3.tex`.  The augmentation projection below removes
+the common mode and constructs the centered source cochain used by the
+source-confluence theorem. -/
+structure RawAtomicSourceIncidenceCertificate (d : ℕ)
+    (V E F : Type*) [Fintype E] [Fintype F] where
+  complex : FiniteTransportComplex V E F
+  startVertex : V
+  finishVertex : V
+  path : Fin (d + 1) → List E
+  pathValid :
+    ∀ i, complex.IsEdgePathFrom startVertex (path i) finishVertex
+  rawSource : Fin (d + 1) → E → ℝ
+  rawFaceCommonMode :
+    ∀ f, ∃ c : ℝ, ∀ j, complex.faceCoboundary (rawSource j) f = c
+  rawOffset : Fin (d + 1) → ℝ
+  rawPathValue :
+    ∀ i j,
+      pathIntegral (rawSource j) (path i) =
+        rawOffset j + if i = j then 1 else 0
+
+namespace RawAtomicSourceIncidenceCertificate
+
+variable {d : ℕ} {V E F : Type*} [Fintype E] [Fintype F]
+
+/-- The augmentation-projected source cochain. -/
+noncomputable def projectedSourceCochain
+    (C : RawAtomicSourceIncidenceCertificate d V E F)
+    (j : Fin (d + 1)) : E → ℝ :=
+  fun e => ∑ i, centeredAtom d i j * C.rawSource i e
+
+/-- The common offset after augmentation projection. -/
+noncomputable def projectedOffset
+    (C : RawAtomicSourceIncidenceCertificate d V E F)
+    (j : Fin (d + 1)) : ℝ :=
+  ∑ i, C.rawOffset i * centeredAtom d i j
+
+/-- Common-mode raw face flux is annihilated by the augmentation projection,
+so every projected source component is a closed cellular cochain. -/
+theorem projectedSourceCochain_closed
+    (C : RawAtomicSourceIncidenceCertificate d V E F)
+    (j : Fin (d + 1)) :
+    C.complex.IsClosed1Cochain (C.projectedSourceCochain j) := by
+  funext f
+  change
+    C.complex.faceCoboundary
+      (fun e => ∑ i, centeredAtom d i j * C.rawSource i e) f = 0
+  rw [faceCoboundary_finite_linearCombination]
+  rcases C.rawFaceCommonMode f with ⟨c, hc⟩
+  simp_rw [hc]
+  rw [← Finset.sum_mul, centeredAtom_sum]
+  simp
+
+/-- Projecting the raw atomic path periods gives the exact centered source
+periods required by the source-confluence certificate. -/
+theorem projectedSourceCochain_pathValue
+    (C : RawAtomicSourceIncidenceCertificate d V E F)
+    (i j : Fin (d + 1)) :
+    pathIntegral (C.projectedSourceCochain j) (C.path i) =
+      C.projectedOffset j + centeredAtom d i j := by
+  change
+    pathIntegral
+      (fun e => ∑ k, centeredAtom d k j * C.rawSource k e) (C.path i) =
+        (∑ k, C.rawOffset k * centeredAtom d k j) +
+          centeredAtom d i j
+  rw [pathIntegral_finite_linearCombination]
+  simp_rw [C.rawPathValue]
+  have hdelta :
+      (∑ k : Fin (d + 1),
+        if i = k then centeredAtom d k j else 0) =
+        centeredAtom d i j := by
+    simp
+  rw [← hdelta, ← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro k _
+  by_cases hik : i = k
+  · simp [hik]
+    ring
+  · simp [hik]
+    ring
+
+/-- Augmentation projection turns raw atomic source incidence into the finite
+source-balanced confluence certificate used by the period-class and simplex
+carrier theorems. -/
+noncomputable def toSourceBalancedConfluenceCertificate
+    (C : RawAtomicSourceIncidenceCertificate d V E F) :
+    SourceBalancedConfluenceCertificate d V E F where
+  complex := C.complex
+  startVertex := C.startVertex
+  finishVertex := C.finishVertex
+  path := C.path
+  pathValid := C.pathValid
+  sourceCochain := C.projectedSourceCochain
+  sourceClosed := C.projectedSourceCochain_closed
+  commonOffset := C.projectedOffset
+  pathValue := C.projectedSourceCochain_pathValue
+
+end RawAtomicSourceIncidenceCertificate
 
 /-- The canonical parallel-channel model is an explicit finite
 source-balanced confluence certificate. -/
