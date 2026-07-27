@@ -66,21 +66,24 @@ cd lean-proofs-sigma
     period agrees and proves the universal factorization of period-invariant
     readouts.  Its finite carrier-registration interface proves that the
     distinguished period classes have exact augmentation rank and the canonical
-    simplex Gram matrix without selecting path representatives.  A raw atomic
-    source-incidence constructor additionally projects common-mode transition
-    incidence to the closed augmentation-null source cochain required by the
-    confluence theorem.  The concrete four-coordinate model constructs this
-    raw incidence on actual Sigma fine-edge histories and proves that its
-    augmentation projection is exactly the centered source marking.  The
-    module also constructs the maximal
+    simplex Gram matrix without selecting path representatives.  Simultaneous
+    relabeling of the distinguished classes and source components preserves
+    the registration and Gram certificate, so absolute source-atom names are
+    not part of the carrier payload.  A raw atomic source-incidence constructor
+    additionally projects common-mode transition incidence to the closed
+    augmentation-null source cochain required by the confluence theorem.  The
+    concrete four-coordinate model constructs this raw incidence on actual
+    Sigma fine-edge histories and proves that its augmentation projection is
+    exactly the centered source marking.  The module also constructs the maximal
     source-admissible face hull and proves that distinct source-history
     comparison loops either remain non-boundaries or force nonzero source flux
     through any proposed filling.
   - Scope: the source-generated coordinate model is constructive.  An
     independently prescribed physical transition network still requires a
-    same-section identification with its raw atomic incidence, distinguished
-    confluent histories, and source-admissible face hull.  An exact state
-    potential alone cannot supply distinct same-endpoint source periods.
+    same-section identification, up to simultaneous source relabeling, with its
+    raw atomic incidence, distinguished confluent histories, and
+    source-admissible face hull.  An exact state potential alone cannot supply
+    distinct same-endpoint source periods.
 
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`

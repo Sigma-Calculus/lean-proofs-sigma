@@ -277,6 +277,44 @@ theorem centeredReadout_gram
   rw [R.centeredReadout_eq_centeredAtom]
   exact centeredAtom_gram d i k
 
+/-- Simultaneous relabeling of distinguished source classes and readout
+components preserves a finite source-period carrier registration.  This
+removes absolute atom labels from the carrier payload without changing its
+same-section period data. -/
+def reindex
+    (R : FiniteSourcePeriodCarrierRegistration d)
+    (p : Equiv.Perm (Fin (d + 1))) :
+    FiniteSourcePeriodCarrierRegistration d where
+  Carrier := R.Carrier
+  distinguished i := R.distinguished (p i)
+  readout c j := R.readout c (p j)
+  commonOffset j := R.commonOffset (p j)
+  readout_distinguished := by
+    intro i j
+    rw [R.readout_distinguished]
+    exact congrArg (R.commonOffset (p j) + ·)
+      (centeredAtom_equivariant p i j)
+
+/-- The centered readout of a relabeled registration is the simultaneous
+permutation of the original distinguished classes and source components. -/
+theorem reindex_centeredReadout
+    (R : FiniteSourcePeriodCarrierRegistration d)
+    (p : Equiv.Perm (Fin (d + 1)))
+    (i j : Fin (d + 1)) :
+    (R.reindex p).centeredReadout i j =
+      R.centeredReadout (p i) (p j) :=
+  rfl
+
+/-- Relabeling preserves the canonical simplex Gram certificate exactly. -/
+theorem reindex_centeredReadout_gram
+    (R : FiniteSourcePeriodCarrierRegistration d)
+    (p : Equiv.Perm (Fin (d + 1)))
+    (i k : Fin (d + 1)) :
+    ∑ j, (R.reindex p).centeredReadout i j *
+        (R.reindex p).centeredReadout k j =
+      centeredAtom d i k :=
+  (R.reindex p).centeredReadout_gram i k
+
 end FiniteSourcePeriodCarrierRegistration
 
 /-- Two vertices suffice for the canonical parallel-channel model. -/
