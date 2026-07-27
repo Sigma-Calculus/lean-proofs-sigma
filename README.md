@@ -69,14 +69,18 @@ cd lean-proofs-sigma
     simplex Gram matrix without selecting path representatives.  A raw atomic
     source-incidence constructor additionally projects common-mode transition
     incidence to the closed augmentation-null source cochain required by the
-    confluence theorem.  The module also constructs the maximal
+    confluence theorem.  The concrete four-coordinate model constructs this
+    raw incidence on actual Sigma fine-edge histories and proves that its
+    augmentation projection is exactly the centered source marking.  The
+    module also constructs the maximal
     source-admissible face hull and proves that distinct source-history
     comparison loops either remain non-boundaries or force nonzero source flux
     through any proposed filling.
-  - Scope: the source-generated coordinate model is constructive; identifying
-    an independently prescribed physical transition network with that model
-    still requires a same-section raw source incidence and distinguished
-    confluent histories.
+  - Scope: the source-generated coordinate model is constructive.  An
+    independently prescribed physical transition network still requires a
+    same-section identification with its raw atomic incidence, distinguished
+    confluent histories, and source-admissible face hull.  An exact state
+    potential alone cannot supply distinct same-endpoint source periods.
 
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`

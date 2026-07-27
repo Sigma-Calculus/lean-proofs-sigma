@@ -1755,6 +1755,51 @@ theorem baseState3_ne_baseState0 (L : ℕ) (hL : 4 ≤ L) :
   simp [baseState0, baseState3, levelZero, levelOne,
     sigmaCoord4Get] at hcoord
 
+/-- The uncentered atomic incidence on the concrete Sigma transition
+skeleton.  An edge leaving the common source event carries the basis atom
+selected by its coordinate axis; every other edge carries zero.
+
+This is the Lean realization of the raw transition-chain incidence used in
+`discrete_noether_sigma_v3.tex`.  Its augmentation projection is proved below
+to equal the centered source marking. -/
+noncomputable def rawSourceMarking (L : ℕ) (hL : 4 ≤ L) :
+    SigmaTransitionSource4 3 L where
+  component := fun i e =>
+    if sigmaFineEdgeSource e = baseState0 L hL then
+      if sigmaFineEdgeAxis e = i then 1 else 0
+    else
+      0
+
+/-- Coordinate and source rotation preserve the raw atomic incidence. -/
+theorem rawSourceMarking_equivariant
+    (L : ℕ) (hL : 4 ≤ L) (i : Fin 4) (e : SigmaFineEdge4 L) :
+    (rawSourceMarking L hL).component (axisCycle i) (edgeCycle e) =
+      (rawSourceMarking L hL).component i e := by
+  by_cases hs : sigmaFineEdgeSource e = baseState0 L hL
+  · simp [rawSourceMarking, hs]
+  · have hsCycle :
+        coordCycle (sigmaFineEdgeSource e) ≠ baseState0 L hL := by
+      intro h
+      apply hs
+      have hrot :
+          coordCycle (sigmaFineEdgeSource e) =
+            coordCycle (baseState0 L hL) := by
+        simpa using h
+      exact (coordCycleEquiv L).injective hrot
+    simp [rawSourceMarking, hs, hsCycle]
+
+/-- The raw atomic period of the base history is the zeroth basis atom. -/
+theorem rawSourceMarking_baseHistory_period
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    pathIntegral ((rawSourceMarking L hL).component j)
+        (baseHistory L hL).edges =
+      if (0 : Fin 4) = j then 1 else 0 := by
+  fin_cases j <;>
+    simp [rawSourceMarking, baseHistory, pathIntegral,
+      baseEdge0, baseEdge1, baseEdge2, baseEdge3,
+      baseState1_ne_baseState0, baseState2_ne_baseState0,
+      baseState3_ne_baseState0]
+
 /-- The canonical rank-three source marking.  Only an edge leaving the common
 source event contributes, and its coordinate axis supplies the source atom. -/
 noncomputable def sourceMarking (L : ℕ) (hL : 4 ≤ L) :
@@ -1808,6 +1853,15 @@ noncomputable def transitionAutomorphism (L : ℕ) (hL : 4 ≤ L) :
     intro e
     simp [concreteSigmaAdmissibleDynamics4, sigmaOrientationTension,
       edgeCycleEquiv]
+
+/-- The concrete transition automorphism with the raw atomic marking is a
+source-equivariant cyclic lift. -/
+noncomputable def rawTransitionLift (L : ℕ) (hL : 4 ≤ L) :
+    CyclicSigmaTransitionLift 3 L
+      (concreteSigmaAdmissibleDynamics4 L hL) (rawSourceMarking L hL) where
+  toSigmaTransitionAutomorphism4 := transitionAutomorphism L hL
+  atomEquiv := axisCycle
+  sourceComponent_map := rawSourceMarking_equivariant L hL
 
 /-- The concrete coordinate rotation and edge marking form the required
 source-equivariant cyclic transition lift. -/
@@ -1893,6 +1947,75 @@ noncomputable def cyclicHistoryOrbit (L : ℕ) (hL : 4 ≤ L) :
         (baseHistory L hL).edges =
       0 + centeredAtom 3 0 j
     simpa using baseHistory_sourcePeriod L hL j
+
+/-- The cyclic histories carry the uncentered atomic period vectors before
+augmentation projection. -/
+theorem rawSourceMarking_history_period
+    (L : ℕ) (hL : 4 ≤ L) (i j : Fin 4) :
+    pathIntegral ((rawSourceMarking L hL).component j)
+        ((cyclicHistoryOrbit L hL).history i).edges =
+      if i = j then 1 else 0 := by
+  let p : Equiv.Perm (Fin 4) := (rawTransitionLift L hL).atomPow i.val
+  have hperiod :=
+    (rawTransitionLift L hL).iterateHistory_sourcePeriod_at
+      (baseHistory L hL) i.val j
+  have hp : p 0 = i := by
+    exact axisCycle_orbit_zero i
+  change
+    pathIntegral ((rawSourceMarking L hL).component j)
+        ((rawTransitionLift L hL).toSigmaTransitionAutomorphism4.iterateHistory
+          i.val (baseHistory L hL)).edges =
+      if i = j then 1 else 0
+  rw [hperiod, rawSourceMarking_baseHistory_period]
+  have hiff : (0 : Fin 4) = p.symm j ↔ i = j := by
+    constructor
+    · intro h
+      simpa [hp] using congrArg p h
+    · intro h
+      subst j
+      exact (p.symm_apply_eq.mpr hp.symm).symm
+  exact if_congr hiff rfl rfl
+
+/-- The actual four-coordinate Sigma transition skeleton supplies the raw
+atomic incidence certificate whose distinguished periods are the four basis
+atoms.  No additional faces are inserted into the source-generated
+one-skeleton. -/
+noncomputable def rawAtomicSourceIncidenceCertificate
+    (L : ℕ) (hL : 4 ≤ L) :
+    RawAtomicSourceIncidenceCertificate 3
+      (SigmaCoord4 L) (SigmaFineEdge4 L) Empty where
+  complex := sigmaTransitionSkeleton L
+  startVertex := baseState0 L hL
+  finishVertex := baseState4 L hL
+  path := fun i => ((cyclicHistoryOrbit L hL).history i).edges
+  pathValid := by
+    intro i
+    have hpath := ((cyclicHistoryOrbit L hL).history i).pathValid
+    simpa [(cyclicHistoryOrbit L hL).history_start i,
+      (cyclicHistoryOrbit L hL).history_finish i] using hpath
+  rawSource := (rawSourceMarking L hL).component
+  rawFaceCommonMode := by
+    intro f
+    exact nomatch f
+  rawOffset := 0
+  rawPathValue := by
+    intro i j
+    simpa using rawSourceMarking_history_period L hL i j
+
+/-- Augmentation projection of the raw concrete incidence is exactly the
+centered source marking already used by the Sigma confluence realization. -/
+theorem rawAtomicSourceIncidence_projected_eq_sourceMarking
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) (e : SigmaFineEdge4 L) :
+    (rawAtomicSourceIncidenceCertificate L hL).projectedSourceCochain j e =
+      (sourceMarking L hL).component j e := by
+  classical
+  by_cases hs : sigmaFineEdgeSource e = baseState0 L hL
+  · simp [RawAtomicSourceIncidenceCertificate.projectedSourceCochain,
+      rawAtomicSourceIncidenceCertificate, rawSourceMarking,
+      sourceMarking, hs]
+  · simp [RawAtomicSourceIncidenceCertificate.projectedSourceCochain,
+      rawAtomicSourceIncidenceCertificate, rawSourceMarking,
+      sourceMarking, hs]
 
 /-- Main rank-three realization theorem: the concrete four-coordinate Sigma
 grid supplies the complete source-balanced transition realization. -/

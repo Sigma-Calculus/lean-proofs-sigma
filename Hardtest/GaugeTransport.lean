@@ -759,6 +759,36 @@ def pathIntegral (sigma : E → ℝ) : List E → ℝ
   | [] => 0
   | e :: rest => sigma e + pathIntegral sigma rest
 
+/-- The path integral of an exact edge cochain depends only on the endpoints.
+This finite telescoping identity rules out obtaining distinct same-endpoint
+source periods from a scalar state potential alone. -/
+theorem pathIntegral_d0_eq_endpointDifference
+    (K : FiniteTransportComplex V E F) (potential : V → ℝ)
+    {vStart vEnd : V} {edges : List E}
+    (hpath : K.IsEdgePathFrom vStart edges vEnd) :
+    pathIntegral (K.d0 potential) edges =
+      potential vEnd - potential vStart := by
+  induction edges generalizing vStart with
+  | nil =>
+      change vEnd = vStart at hpath
+      subst vEnd
+      simp [pathIntegral]
+  | cons e rest ih =>
+      rcases hpath with ⟨hsource, htail⟩
+      rw [pathIntegral, d0, ih htail, hsource]
+      ring
+
+/-- Two exact-cochain periods agree on any two paths with common endpoints. -/
+theorem pathIntegral_d0_eq_of_sameEndpoints
+    (K : FiniteTransportComplex V E F) (potential : V → ℝ)
+    {vStart vEnd : V} {edges₁ edges₂ : List E}
+    (hpath₁ : K.IsEdgePathFrom vStart edges₁ vEnd)
+    (hpath₂ : K.IsEdgePathFrom vStart edges₂ vEnd) :
+    pathIntegral (K.d0 potential) edges₁ =
+      pathIntegral (K.d0 potential) edges₂ := by
+  rw [K.pathIntegral_d0_eq_endpointDifference potential hpath₁,
+    K.pathIntegral_d0_eq_endpointDifference potential hpath₂]
+
 omit [Fintype E] in
 /-- Path integrals are additive under concatenation. -/
 lemma pathIntegral_append (sigma : E → ℝ) (edges₁ edges₂ : List E) :
