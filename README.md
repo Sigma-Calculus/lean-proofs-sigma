@@ -127,23 +127,32 @@ import Hardtest.YangMillsContinuumBridge
 
 The canonical reusable module path for the Appendix VI admissible finite Sigma
 dynamics class and joint finite Sigma axiom model is `Hardtest/SigmaAxioms.lean`.
+
 The canonical reusable module path for the Appendix VI block-Laplacian and
 spectral layer is `Hardtest/BlockLaplacian.lean`.
+
 The canonical reusable module path for the Appendix VI sigma-Regge readout and
 finite-template shape-regularity layer is `Hardtest/SigmaRegge.lean`.
+
 The canonical reusable module path for the Appendix VI finite horizon readout
 separation layer is `Hardtest/HorizonReadout.lean`.
+
 The canonical reusable module path for the Appendix VI horizon-to-radiation
 visibility criterion is `Hardtest/HorizonRadiationVisibility.lean`.
+
 The canonical reusable module path for the finite Sigma patch visibility
 threshold bridge is `Hardtest/PatchVisibility.lean`.
+
 The canonical reusable module path for the finite source-confluence
 certificate, the source-period quotient, the concrete rank-three Sigma
 realization, and the source-admissible face-hull criterion is
 `Hardtest/SourceConfluence.lean`.
+
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
+
 The canonical reusable module path for the Yang--Mills transport paper is
 `Hardtest/YangMills.lean`.
+
 The canonical reusable bridge module path for the conditional Yang--Mills
 continuum step is `Hardtest/YangMillsContinuumBridge.lean`.
