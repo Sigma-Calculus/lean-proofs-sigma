@@ -12,6 +12,7 @@ import Hardtest.HorizonRadiationVisibility
 import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
 import Hardtest.SourceConfluence
+import Hardtest.SourceTransitionOrbit
 import Hardtest.DiscreteNoether
 import Hardtest.SourceNoether
 import Hardtest.YangMills

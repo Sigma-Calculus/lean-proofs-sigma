@@ -91,6 +91,16 @@ cd lean-proofs-sigma
     hull.  An exact state potential alone cannot supply distinct same-endpoint
     source periods.
 
+- `Hardtest.SourceTransitionOrbit`
+  - File: `Hardtest/SourceTransitionOrbit.lean`
+  - Source paper context: the source-equivariant raw transition-orbit
+    criterion in `discrete_noether_sigma_v3.tex`.  A single common-endpoint
+    base path, an incidence-preserving cyclic transition automorphism, and an
+    equivariant raw edge-source readout construct the full raw atomic
+    source-incidence and source-balanced confluence certificates.  The module
+    does not assert that an independently prescribed physical network supplies
+    that edge-source readout.
+
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`
   - Source paper context: finite reduced-holonomy Noether charge,
@@ -133,6 +143,7 @@ lake build Hardtest.HorizonRadiationVisibility
 lake build Hardtest.PatchVisibility
 lake build Hardtest.GaugeTransport
 lake build Hardtest.SourceConfluence
+lake build Hardtest.SourceTransitionOrbit
 lake build Hardtest.DiscreteNoether
 lake build Hardtest.SourceNoether
 lake build Hardtest.YangMills
@@ -153,6 +164,7 @@ import Hardtest.HorizonRadiationVisibility
 import Hardtest.PatchVisibility
 import Hardtest.GaugeTransport
 import Hardtest.SourceConfluence
+import Hardtest.SourceTransitionOrbit
 import Hardtest.DiscreteNoether
 import Hardtest.SourceNoether
 import Hardtest.YangMills
@@ -182,6 +194,10 @@ projection, finite source-confluence certificate, finite source-period carrier
 registration, source-period quotient, concrete rank-three Sigma realization,
 and source-admissible face-hull criterion is
 `Hardtest/SourceConfluence.lean`.
+
+The canonical reusable bridge from one source-equivariant raw transition orbit
+to the raw atomic incidence and source-balanced confluence certificates is
+`Hardtest/SourceTransitionOrbit.lean`.
 
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
