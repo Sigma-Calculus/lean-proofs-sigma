@@ -128,8 +128,11 @@ cd lean-proofs-sigma
     the non-scalar cyclic harmonic/Noether action in
     `discrete_noether_sigma_v3.tex`.  The four-source cyclic transition
     restricts to an orthogonal order-four action on the augmentation-null
-    carrier, produces cyclic reduced Noether data, and has a directional
-    charge that is not a scalar multiple of the carrier norm.
+    carrier, canonically supplies its orthogonal quarter-turn direction plane,
+    produces cyclic reduced Noether data, and has a directional charge that is
+    not a scalar multiple of the carrier norm.  The direction-plane
+    certificate also supports
+    `Sigma_Same_Section_Transition_Star_Realization_from_Finite_Complex_Equivalence_full_proof.tex`.
   - Scope: this closes the formal source-to-Noether bridge for the canonical
     parallel-channel response model.  It does not identify an independently
     prescribed physical transition network with that model.
