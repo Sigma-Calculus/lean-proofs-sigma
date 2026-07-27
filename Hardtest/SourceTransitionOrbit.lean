@@ -33,6 +33,12 @@ completeness.  A source-preserving transition automorphism and one seed edge
 generate `d + 1` distinct outgoing edges, while an independently established
 local valence bound rules out additional outgoing edges.  Finite cardinality
 then constructs the complete regular cyclic outgoing star.
+
+An exact finite transition-complex equivalence provides the application-level
+transport theorem.  It conjugates the canonical vertex and edge automorphisms
+and carries the complete outgoing star to the registered same-section
+complex.  The theorem does not infer such an equivalence from geometric
+readout data.
 -/
 
 namespace Hardtest
@@ -332,6 +338,150 @@ def toCompleteRegularCyclicOutgoingStar
     exact hj.trans (congrArg Subtype.val hi).symm
 
 end ValenceBoundedCyclicOutgoingOrbit
+
+/--
+An exact equivalence between two finite transition complexes.
+
+The vertex, edge, and face equivalences preserve the directed incidence and
+the integral face-boundary coefficients.  In the paper-facing criterion this
+is the finite same-section registration datum: it is strong enough to
+transport a proved transition-star realization, but it is not inferred from a
+static geometric readout.
+-/
+structure TransitionComplexEquiv
+    (V E F V' E' F' : Type*)
+    [Fintype E] [Fintype F] [Fintype E'] [Fintype F']
+    (K : FiniteTransportComplex V E F)
+    (K' : FiniteTransportComplex V' E' F') where
+  vertexEquiv : V ≃ V'
+  edgeEquiv : E ≃ E'
+  faceEquiv : F ≃ F'
+  source_map :
+    ∀ e, K'.source (edgeEquiv e) = vertexEquiv (K.source e)
+  target_map :
+    ∀ e, K'.target (edgeEquiv e) = vertexEquiv (K.target e)
+  faceBoundary_map :
+    ∀ f e,
+      K'.faceBoundary (faceEquiv f) (edgeEquiv e) =
+        K.faceBoundary f e
+
+namespace TransitionComplexEquiv
+
+variable {d : ℕ}
+  {V E F V' E' F' : Type*}
+  [Fintype E] [Fintype F] [Fintype E'] [Fintype F']
+  {K : FiniteTransportComplex V E F}
+  {K' : FiniteTransportComplex V' E' F'}
+
+/--
+Conjugating a transition automorphism by a complex equivalence constructs the
+corresponding automorphism on the registered transition complex.
+-/
+noncomputable def mapAutomorphism
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (A : TransitionComplexAutomorphism V E F K) :
+    TransitionComplexAutomorphism V' E' F' K' where
+  vertexEquiv :=
+    (I.vertexEquiv.symm.trans A.vertexEquiv).trans I.vertexEquiv
+  edgeEquiv :=
+    (I.edgeEquiv.symm.trans A.edgeEquiv).trans I.edgeEquiv
+  source_map := by
+    intro e'
+    have hs :
+        K.source (I.edgeEquiv.symm e') =
+          I.vertexEquiv.symm (K'.source e') := by
+      apply I.vertexEquiv.injective
+      simpa using (I.source_map (I.edgeEquiv.symm e')).symm
+    simp only [Equiv.trans_apply]
+    rw [I.source_map, A.source_map, hs]
+  target_map := by
+    intro e'
+    have ht :
+        K.target (I.edgeEquiv.symm e') =
+          I.vertexEquiv.symm (K'.target e') := by
+      apply I.vertexEquiv.injective
+      simpa using (I.target_map (I.edgeEquiv.symm e')).symm
+    simp only [Equiv.trans_apply]
+    rw [I.target_map, A.target_map, ht]
+
+@[simp]
+theorem mapAutomorphism_vertex_apply
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (A : TransitionComplexAutomorphism V E F K)
+    (v : V) :
+    (I.mapAutomorphism A).vertexEquiv (I.vertexEquiv v) =
+      I.vertexEquiv (A.vertexEquiv v) := by
+  simp [mapAutomorphism]
+
+@[simp]
+theorem mapAutomorphism_edge_apply
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (A : TransitionComplexAutomorphism V E F K)
+    (e : E) :
+    (I.mapAutomorphism A).edgeEquiv (I.edgeEquiv e) =
+      I.edgeEquiv (A.edgeEquiv e) := by
+  simp [mapAutomorphism]
+
+/-- Conjugation intertwines every finite iterate of the edge action. -/
+theorem mapAutomorphism_edge_pow_apply
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (A : TransitionComplexAutomorphism V E F K)
+    (n : ℕ) (e : E) :
+    ((I.mapAutomorphism A).edgeEquiv ^ n) (I.edgeEquiv e) =
+      I.edgeEquiv ((A.edgeEquiv ^ n) e) := by
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      simp only [pow_succ', Equiv.Perm.mul_apply]
+      rw [ih, I.mapAutomorphism_edge_apply]
+
+/--
+An exact same-section transition-complex equivalence transports a complete
+regular cyclic outgoing star.  The physical transition automorphism is the
+conjugate of the supplied Sigma automorphism; no independent edge relabeling
+is introduced.
+-/
+noncomputable def mapCompleteRegularCyclicOutgoingStar
+    (S : CompleteRegularCyclicOutgoingStar d V E F)
+    (I : TransitionComplexEquiv V E F V' E' F' S.complex K') :
+    CompleteRegularCyclicOutgoingStar d V' E' F' where
+  complex := K'
+  transition := I.mapAutomorphism S.transition
+  startVertex := I.vertexEquiv S.startVertex
+  startFixed := by
+    rw [I.mapAutomorphism_vertex_apply, S.startFixed]
+  baseEdge := I.edgeEquiv S.baseEdge
+  baseEdge_source := by
+    rw [I.source_map, S.baseEdge_source]
+  orbit_complete := by
+    intro e' he'
+    let e : E := I.edgeEquiv.symm e'
+    have he : S.complex.source e = S.startVertex := by
+      have hs := I.source_map e
+      have hie : I.edgeEquiv e = e' := I.edgeEquiv.apply_symm_apply e'
+      rw [hie, he'] at hs
+      exact (I.vertexEquiv.injective hs.symm)
+    rcases S.orbit_complete e he with ⟨i, hi, hunique⟩
+    refine ⟨i, ?_, ?_⟩
+    · change
+        ((I.mapAutomorphism S.transition).edgeEquiv ^ i.val)
+            (I.edgeEquiv S.baseEdge) = e'
+      rw [I.mapAutomorphism_edge_pow_apply, hi]
+      exact I.edgeEquiv.apply_symm_apply e'
+    · intro j hj
+      apply hunique
+      apply I.edgeEquiv.injective
+      calc
+        I.edgeEquiv ((S.transition.edgeEquiv ^ j.val) S.baseEdge) =
+            ((I.mapAutomorphism S.transition).edgeEquiv ^ j.val)
+              (I.edgeEquiv S.baseEdge) :=
+          (I.mapAutomorphism_edge_pow_apply
+            S.transition j.val S.baseEdge).symm
+        _ = e' := hj
+        _ = I.edgeEquiv e := (I.edgeEquiv.apply_symm_apply e').symm
+
+end TransitionComplexEquiv
 
 /-- A raw source-equivariant cyclic transition orbit.
 
