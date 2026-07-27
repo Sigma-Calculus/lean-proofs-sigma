@@ -18,12 +18,14 @@ source-incidence and source-balanced confluence certificates formalized in
 The paper-facing source is `discrete_noether_sigma_v3.tex`.  The relevant
 statements are the definition of raw atomic source incidence, the augmentation
 projection theorem, and the source-balanced confluence theorem.  This module
-formalizes the intervening finite criterion: one common-endpoint base path,
-one incidence-preserving cyclic transition automorphism, and one equivariant
-raw edge-source readout generate the complete distinguished path family.
+formalizes two intervening finite criteria.  First, one common-endpoint base
+path, one incidence-preserving cyclic transition automorphism, and one
+equivariant raw edge-source readout generate the complete distinguished path
+family.  Second, a regular equivariant orbit of outgoing source edges
+canonically induces that raw readout as an atomic indicator incidence.
 
 The construction does not assert that an independently prescribed physical
-transition network supplies the raw edge-source readout or the cyclic
+transition network supplies the required source-edge orbit or the cyclic
 automorphism.  Those remain same-section realization data.
 -/
 
@@ -292,7 +294,203 @@ noncomputable def finiteSourcePeriodCarrierRegistration
 
 end SourceEquivariantRawTransitionOrbit
 
+/-- The atomic indicator incidence carried by a finite source-edge frame. -/
+noncomputable def sourceEdgeIndicator
+    {d : ℕ} {E : Type*}
+    (sourceEdge : Fin (d + 1) → E) :
+    Fin (d + 1) → E → ℝ := by
+  classical
+  exact fun j e => if sourceEdge j = e then 1 else 0
+
+/-- A regular orbit of source edges.
+
+This is strictly smaller data than an arbitrary edge-source readout.  The
+source-edge frame and its cyclic transition action canonically generate the
+raw atomic indicator incidence used below.  The face clause records exactly
+the compatibility needed when the registered transition section contains
+two-cells; it is vacuous on an orbit-generated one-skeleton. -/
+structure RegularSourceEdgeOrbit
+    (d : ℕ) (V E F : Type*) [Fintype E] [Fintype F] where
+  complex : FiniteTransportComplex V E F
+  transition : TransitionComplexAutomorphism V E F complex
+  atomEquiv : Equiv.Perm (Fin (d + 1))
+  sourceEdge : Fin (d + 1) → E
+  sourceEdge_injective : Function.Injective sourceEdge
+  sourceEdge_map :
+    ∀ j,
+      transition.edgeEquiv (sourceEdge j) =
+        sourceEdge (atomEquiv j)
+  sourceFaceCommonMode :
+    ∀ f, ∃ c : ℝ, ∀ j,
+      complex.faceCoboundary (sourceEdgeIndicator sourceEdge j) f = c
+  startVertex : V
+  finishVertex : V
+  tail : List E
+  baseAtom : Fin (d + 1)
+  basePathValid :
+    complex.IsEdgePathFrom
+      startVertex (sourceEdge baseAtom :: tail) finishVertex
+  tail_avoids_source_edges :
+    ∀ j, sourceEdge j ∉ tail
+  startFixed :
+    transition.vertexEquiv startVertex = startVertex
+  finishFixed :
+    transition.vertexEquiv finishVertex = finishVertex
+  atomOrbit :
+    ∀ i, (atomEquiv ^ i.val) baseAtom = i
+
+namespace RegularSourceEdgeOrbit
+
+variable {d : ℕ} {V E F : Type*} [Fintype E] [Fintype F]
+
+/-- The canonical raw source readout induced by the regular source-edge
+orbit. -/
+noncomputable def canonicalRawSource
+    (O : RegularSourceEdgeOrbit d V E F) :
+    Fin (d + 1) → E → ℝ :=
+  sourceEdgeIndicator O.sourceEdge
+
+/-- The induced indicator incidence is equivariant under the registered
+transition and source cycles. -/
+theorem canonicalRawSource_map
+    (O : RegularSourceEdgeOrbit d V E F)
+    (j : Fin (d + 1)) (e : E) :
+    O.canonicalRawSource (O.atomEquiv j)
+        (O.transition.edgeEquiv e) =
+      O.canonicalRawSource j e := by
+  classical
+  by_cases h : O.sourceEdge j = e
+  · subst e
+    simp [canonicalRawSource, sourceEdgeIndicator, O.sourceEdge_map]
+  · have hmap :
+        O.sourceEdge (O.atomEquiv j) ≠
+          O.transition.edgeEquiv e := by
+      intro heq
+      apply h
+      apply O.transition.edgeEquiv.injective
+      calc
+        O.transition.edgeEquiv (O.sourceEdge j) =
+            O.sourceEdge (O.atomEquiv j) :=
+          O.sourceEdge_map j
+        _ = O.transition.edgeEquiv e := heq
+    simp [canonicalRawSource, sourceEdgeIndicator, h, hmap]
+
+omit [Fintype E] in
+/-- An edge list avoiding one source edge has zero period for its indicator
+incidence. -/
+theorem pathIntegral_sourceEdgeIndicator_eq_zero
+    (sourceEdge : Fin (d + 1) → E)
+    (j : Fin (d + 1)) (edges : List E)
+    (havoid : sourceEdge j ∉ edges) :
+    pathIntegral (sourceEdgeIndicator sourceEdge j) edges = 0 := by
+  classical
+  induction edges with
+  | nil =>
+      simp [pathIntegral]
+  | cons e rest ih =>
+      have hhead : sourceEdge j ≠ e := by
+        intro heq
+        apply havoid
+        simp [heq]
+      have htail : sourceEdge j ∉ rest := by
+        intro hmem
+        apply havoid
+        simp [hmem]
+      rw [pathIntegral, ih htail]
+      simp [sourceEdgeIndicator, hhead]
+
+/-- The orbit-generated base path has the raw period of its unique source
+edge. -/
+theorem basePath_rawSourcePeriod
+    (O : RegularSourceEdgeOrbit d V E F)
+    (j : Fin (d + 1)) :
+    pathIntegral (O.canonicalRawSource j)
+        (O.sourceEdge O.baseAtom :: O.tail) =
+      if O.baseAtom = j then 1 else 0 := by
+  classical
+  have htail :
+      pathIntegral (O.canonicalRawSource j) O.tail = 0 := by
+    exact pathIntegral_sourceEdgeIndicator_eq_zero
+      O.sourceEdge j O.tail (O.tail_avoids_source_edges j)
+  rw [pathIntegral, htail]
+  by_cases h : O.baseAtom = j
+  · subst j
+    simp [canonicalRawSource, sourceEdgeIndicator]
+  · have hedge :
+        O.sourceEdge j ≠ O.sourceEdge O.baseAtom := by
+      intro heq
+      apply h
+      exact (O.sourceEdge_injective heq).symm
+    simp [canonicalRawSource, sourceEdgeIndicator, h, hedge]
+
+/-- Main constructor: a regular source-edge orbit canonically supplies the
+raw source-equivariant transition orbit, so the edge-source readout is no
+longer independent input. -/
+noncomputable def toSourceEquivariantRawTransitionOrbit
+    (O : RegularSourceEdgeOrbit d V E F) :
+    SourceEquivariantRawTransitionOrbit d V E F where
+  complex := O.complex
+  transition := O.transition
+  atomEquiv := O.atomEquiv
+  rawSource := O.canonicalRawSource
+  sourceComponent_map := O.canonicalRawSource_map
+  rawFaceCommonMode := O.sourceFaceCommonMode
+  startVertex := O.startVertex
+  finishVertex := O.finishVertex
+  basePath := O.sourceEdge O.baseAtom :: O.tail
+  basePathValid := O.basePathValid
+  startFixed := O.startFixed
+  finishFixed := O.finishFixed
+  baseAtom := O.baseAtom
+  atomOrbit := O.atomOrbit
+  rawOffset := fun _ => 0
+  offsetInvariant := by
+    intro n j
+    rfl
+  basePathValue := by
+    intro j
+    simpa using O.basePath_rawSourcePeriod j
+
+/-- The regular source-edge orbit therefore supplies the complete
+source-balanced confluence certificate. -/
+noncomputable def toSourceBalancedConfluenceCertificate
+    (O : RegularSourceEdgeOrbit d V E F) :
+    SourceBalancedConfluenceCertificate d V E F :=
+  O.toSourceEquivariantRawTransitionOrbit
+    |>.toSourceBalancedConfluenceCertificate
+
+end RegularSourceEdgeOrbit
+
 namespace ConcreteFourCoordinateModel
+
+/-- The four canonical outgoing source edges at the zero event. -/
+def initialSourceEdge
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    SigmaFineEdge4 L :=
+  forwardEdge (baseState0 L hL) j (by
+    simp [baseState0, levelZero, sigmaCoord4Get]
+    omega)
+
+@[simp]
+theorem initialSourceEdge_source
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    sigmaFineEdgeSource (initialSourceEdge L hL j) =
+      baseState0 L hL :=
+  rfl
+
+@[simp]
+theorem initialSourceEdge_axis
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    sigmaFineEdgeAxis (initialSourceEdge L hL j) = j :=
+  rfl
+
+/-- The canonical outgoing source-edge frame is faithful. -/
+theorem initialSourceEdge_injective
+    (L : ℕ) (hL : 4 ≤ L) :
+    Function.Injective (initialSourceEdge L hL) := by
+  intro i j h
+  have haxis := congrArg sigmaFineEdgeAxis h
+  simpa using haxis
 
 /-- The coordinate cycle viewed as an automorphism of the concrete finite
 Sigma transition skeleton. -/
@@ -309,6 +507,78 @@ noncomputable def rawTransitionComplexAutomorphism
     (transitionAutomorphism L hL).source_map
   target_map :=
     (transitionAutomorphism L hL).target_map
+
+/-- Coordinate rotation transports the outgoing source-edge frame
+equivariantly. -/
+theorem rawTransitionComplexAutomorphism_sourceEdge_map
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    (rawTransitionComplexAutomorphism L hL).edgeEquiv
+        (initialSourceEdge L hL j) =
+      initialSourceEdge L hL (axisCycle j) := by
+  apply Subtype.ext
+  rfl
+
+/-- The later three edges of the base history avoid the outgoing source-edge
+frame. -/
+theorem initialSourceEdge_not_mem_baseTail
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    initialSourceEdge L hL j ∉
+      [baseEdge1 L hL, baseEdge2 L hL, baseEdge3 L hL] := by
+  simp only [List.mem_cons, List.not_mem_nil, or_false, not_or]
+  constructor
+  · intro h
+    have hsource := congrArg sigmaFineEdgeSource h
+    exact (baseState1_ne_baseState0 L hL) (by simpa using hsource.symm)
+  · constructor
+    · intro h
+      have hsource := congrArg sigmaFineEdgeSource h
+      exact (baseState2_ne_baseState0 L hL) (by simpa using hsource.symm)
+    · intro h
+      have hsource := congrArg sigmaFineEdgeSource h
+      exact (baseState3_ne_baseState0 L hL) (by simpa using hsource.symm)
+
+/-- The concrete four-coordinate transition dynamics supply the regular
+source-edge orbit from which the raw atomic marking is induced. -/
+noncomputable def regularSourceEdgeOrbit
+    (L : ℕ) (hL : 4 ≤ L) :
+    RegularSourceEdgeOrbit 3
+      (SigmaCoord4 L) (SigmaFineEdge4 L) Empty where
+  complex := sigmaTransitionSkeleton L
+  transition := rawTransitionComplexAutomorphism L hL
+  atomEquiv := axisCycle
+  sourceEdge := initialSourceEdge L hL
+  sourceEdge_injective := initialSourceEdge_injective L hL
+  sourceEdge_map :=
+    rawTransitionComplexAutomorphism_sourceEdge_map L hL
+  sourceFaceCommonMode := by
+    intro f
+    exact nomatch f
+  startVertex := baseState0 L hL
+  finishVertex := baseState4 L hL
+  tail := [baseEdge1 L hL, baseEdge2 L hL, baseEdge3 L hL]
+  baseAtom := 0
+  basePathValid := by
+    have hsourceEdge :
+        initialSourceEdge L hL 0 = baseEdge0 L hL := by
+      apply Subtype.ext
+      rfl
+    simpa [baseHistory, hsourceEdge] using
+      (baseHistory L hL).pathValid
+  tail_avoids_source_edges :=
+    initialSourceEdge_not_mem_baseTail L hL
+  startFixed := coordCycle_baseState0 L hL
+  finishFixed := coordCycle_baseState4 L hL
+  atomOrbit := axisCycle_orbit_zero
+
+/-- The regular source-edge orbit constructs the concrete raw atomic
+incidence certificate without taking an arbitrary edge-source map as input. -/
+noncomputable def rawAtomicSourceIncidenceCertificateFromSourceEdges
+    (L : ℕ) (hL : 4 ≤ L) :
+    RawAtomicSourceIncidenceCertificate 3
+      (SigmaCoord4 L) (SigmaFineEdge4 L) Empty :=
+  (regularSourceEdgeOrbit L hL)
+    |>.toSourceEquivariantRawTransitionOrbit
+    |>.toRawAtomicSourceIncidenceCertificate
 
 /-- The concrete four-coordinate edge dynamics inhabit the raw
 source-equivariant transition-orbit criterion. -/

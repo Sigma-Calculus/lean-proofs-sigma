@@ -97,9 +97,11 @@ cd lean-proofs-sigma
     criterion in `discrete_noether_sigma_v3.tex`.  A single common-endpoint
     base path, an incidence-preserving cyclic transition automorphism, and an
     equivariant raw edge-source readout construct the full raw atomic
-    source-incidence and source-balanced confluence certificates.  The module
-    does not assert that an independently prescribed physical network supplies
-    that edge-source readout.
+    source-incidence and source-balanced confluence certificates.  More
+    strongly, a regular equivariant orbit of outgoing source edges canonically
+    induces that raw readout as an indicator incidence.  The module does not
+    assert that an independently prescribed physical network supplies the
+    required source-edge orbit or cyclic transition action.
 
 - `Hardtest.DiscreteNoether`
   - File: `Hardtest/DiscreteNoether.lean`
@@ -195,9 +197,9 @@ registration, source-period quotient, concrete rank-three Sigma realization,
 and source-admissible face-hull criterion is
 `Hardtest/SourceConfluence.lean`.
 
-The canonical reusable bridge from one source-equivariant raw transition orbit
-to the raw atomic incidence and source-balanced confluence certificates is
-`Hardtest/SourceTransitionOrbit.lean`.
+The canonical reusable bridge from a regular equivariant source-edge orbit,
+through its induced raw indicator incidence, to the source-balanced confluence
+certificate is `Hardtest/SourceTransitionOrbit.lean`.
 
 The canonical reusable module path for the reduced Noether paper is
 `Hardtest/DiscreteNoether.lean`.
