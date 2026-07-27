@@ -100,7 +100,140 @@ theorem iteratePath_valid_of_fixed
       have hmapped := A.map_path_valid ih
       simpa [iteratePath, hstart, hfinish] using hmapped
 
+/-- Iterating a transition automorphism transports the source vertex by the
+same number of vertex-automorphism steps. -/
+theorem iterateEdge_source
+    (A : TransitionComplexAutomorphism V E F K)
+    (n : ℕ) (e : E) :
+    K.source ((A.edgeEquiv ^ n) e) =
+      (A.vertexEquiv ^ n) (K.source e) := by
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      simp only [pow_succ', Equiv.Perm.mul_apply]
+      rw [A.source_map, ih]
+
+/-- Every iterate of an edge leaving a fixed vertex leaves that same vertex. -/
+theorem iterateEdge_source_of_fixed
+    (A : TransitionComplexAutomorphism V E F K)
+    (n : ℕ) (e : E) (v : V)
+    (hsource : K.source e = v)
+    (hfixed : A.vertexEquiv v = v) :
+    K.source ((A.edgeEquiv ^ n) e) = v := by
+  rw [A.iterateEdge_source, hsource]
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      simp only [pow_succ', Equiv.Perm.mul_apply]
+      rw [ih, hfixed]
+
 end TransitionComplexAutomorphism
+
+/-- The complete outgoing edge star of a vertex in a finite transition
+complex. -/
+abbrev OutgoingEdge
+    {V E F : Type*} [Fintype E] [Fintype F]
+    (K : FiniteTransportComplex V E F) (v : V) :=
+  {e : E // K.source e = v}
+
+/--
+An intrinsic complete regular cyclic outgoing star.
+
+This criterion contains no independent source-atom labelling.  A single base
+edge and the registered transition automorphism enumerate every outgoing edge
+exactly once during the first `d + 1` iterates.  The TeX result in
+`discrete_noether_sigma_v3.tex` quotients the remaining base-edge choice by
+simultaneous cyclic relabelling before coupling this star to the regular source
+atoms.
+-/
+structure CompleteRegularCyclicOutgoingStar
+    (d : ℕ) (V E F : Type*) [Fintype E] [Fintype F] where
+  complex : FiniteTransportComplex V E F
+  transition : TransitionComplexAutomorphism V E F complex
+  startVertex : V
+  startFixed :
+    transition.vertexEquiv startVertex = startVertex
+  baseEdge : E
+  baseEdge_source :
+    complex.source baseEdge = startVertex
+  orbit_complete :
+    ∀ e, complex.source e = startVertex →
+      ∃! i : Fin (d + 1),
+        (transition.edgeEquiv ^ i.val) baseEdge = e
+
+namespace CompleteRegularCyclicOutgoingStar
+
+variable {d : ℕ} {V E F : Type*} [Fintype E] [Fintype F]
+
+/-- The cyclic enumeration induced by the base edge and transition action. -/
+def sourceEdge
+    (S : CompleteRegularCyclicOutgoingStar d V E F)
+    (i : Fin (d + 1)) : E :=
+  (S.transition.edgeEquiv ^ i.val) S.baseEdge
+
+/-- Every cyclically enumerated edge belongs to the registered outgoing star. -/
+theorem sourceEdge_source
+    (S : CompleteRegularCyclicOutgoingStar d V E F)
+    (i : Fin (d + 1)) :
+    S.complex.source (S.sourceEdge i) = S.startVertex := by
+  exact S.transition.iterateEdge_source_of_fixed
+    i.val S.baseEdge S.startVertex S.baseEdge_source S.startFixed
+
+/-- The first `d + 1` cyclic iterates are pairwise distinct. -/
+theorem sourceEdge_injective
+    (S : CompleteRegularCyclicOutgoingStar d V E F) :
+    Function.Injective S.sourceEdge := by
+  intro i j hij
+  rcases S.orbit_complete (S.sourceEdge i) (S.sourceEdge_source i) with
+    ⟨k, hk, hunique⟩
+  have hi : i = k := hunique i rfl
+  have hj : j = k := hunique j hij.symm
+  exact hi.trans hj.symm
+
+/-- Every outgoing edge occurs in the cyclic enumeration. -/
+theorem sourceEdge_surjective
+    (S : CompleteRegularCyclicOutgoingStar d V E F) :
+    Function.Surjective
+      (fun i : Fin (d + 1) =>
+        (⟨S.sourceEdge i, S.sourceEdge_source i⟩ :
+          OutgoingEdge S.complex S.startVertex)) := by
+  intro e
+  rcases S.orbit_complete e.1 e.2 with ⟨i, hi, _⟩
+  refine ⟨i, ?_⟩
+  apply Subtype.ext
+  exact hi
+
+/--
+The source-axis index is equivalent to the complete outgoing star.  Thus the
+cyclic frame is not a selected proper subset of that star.
+-/
+noncomputable def sourceEdgeEquiv
+    (S : CompleteRegularCyclicOutgoingStar d V E F) :
+    Fin (d + 1) ≃ OutgoingEdge S.complex S.startVertex :=
+  Equiv.ofBijective
+    (fun i =>
+      (⟨S.sourceEdge i, S.sourceEdge_source i⟩ :
+        OutgoingEdge S.complex S.startVertex))
+    ⟨by
+      intro i j hij
+      apply S.sourceEdge_injective
+      exact congrArg Subtype.val hij,
+      S.sourceEdge_surjective⟩
+
+/--
+Every possible base edge of the outgoing star is a unique cyclic shift of the
+registered base edge.  This is the finite base-gauge statement used by the
+paper-facing quotient construction.
+-/
+theorem outgoingEdge_unique_cyclic_shift
+    (S : CompleteRegularCyclicOutgoingStar d V E F)
+    (e : OutgoingEdge S.complex S.startVertex) :
+    ∃! i : Fin (d + 1), S.sourceEdge i = e.1 :=
+  S.orbit_complete e.1 e.2
+
+end CompleteRegularCyclicOutgoingStar
 
 /-- A raw source-equivariant cyclic transition orbit.
 
@@ -606,6 +739,54 @@ theorem rawTransitionComplexAutomorphism_sourceEdge_map
       initialSourceEdge L hL (axisCycle j) := by
   apply Subtype.ext
   rfl
+
+/-- Iterating coordinate rotation from axis zero enumerates the complete
+canonical source-edge frame. -/
+theorem rawTransitionComplexAutomorphism_sourceEdge_orbit
+    (L : ℕ) (hL : 4 ≤ L) (j : Fin 4) :
+    ((rawTransitionComplexAutomorphism L hL).edgeEquiv ^ j.val)
+        (initialSourceEdge L hL 0) =
+      initialSourceEdge L hL j := by
+  fin_cases j <;> apply Subtype.ext <;> rfl
+
+/--
+The concrete zero event satisfies the intrinsic complete regular cyclic
+outgoing-star criterion.  In particular, the source-axis frame is recovered
+from the transition action and one base edge rather than supplied as an
+independent four-edge labelling.
+-/
+noncomputable def completeRegularCyclicOutgoingStar
+    (L : ℕ) (hL : 4 ≤ L) :
+    CompleteRegularCyclicOutgoingStar 3
+      (SigmaCoord4 L) (SigmaFineEdge4 L) Empty where
+  complex := sigmaTransitionSkeleton L
+  transition := rawTransitionComplexAutomorphism L hL
+  startVertex := baseState0 L hL
+  startFixed := coordCycle_baseState0 L hL
+  baseEdge := initialSourceEdge L hL 0
+  baseEdge_source := initialSourceEdge_source L hL 0
+  orbit_complete := by
+    intro e hsource
+    let i := sigmaFineEdgeAxis e
+    refine ⟨i, ?_, ?_⟩
+    · change
+        ((rawTransitionComplexAutomorphism L hL).edgeEquiv ^ i.val)
+            (initialSourceEdge L hL 0) =
+          e
+      rw [rawTransitionComplexAutomorphism_sourceEdge_orbit]
+      exact (edge_eq_initialSourceEdge_of_source_eq
+        L hL e hsource).symm
+    · intro j hj
+      rw [rawTransitionComplexAutomorphism_sourceEdge_orbit] at hj
+      have haxis := congrArg sigmaFineEdgeAxis hj
+      simpa [i] using haxis
+
+/-- The generic intrinsic-star equivalence recovers the complete concrete
+outgoing star at the zero event. -/
+noncomputable def intrinsicInitialSourceEdgeEquiv
+    (L : ℕ) (hL : 4 ≤ L) :
+    Fin 4 ≃ InitialOutgoingEdge L hL :=
+  (completeRegularCyclicOutgoingStar L hL).sourceEdgeEquiv
 
 /-- The later three edges of the base history avoid the outgoing source-edge
 frame. -/
