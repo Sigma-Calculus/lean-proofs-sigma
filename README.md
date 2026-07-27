@@ -107,11 +107,13 @@ cd lean-proofs-sigma
     of `d + 1` outgoing edges to a complete regular cyclic star by finite
     cardinality.  An exact finite transition-complex equivalence transports
     the resulting star to a registered same-section complex by conjugating
-    the vertex and edge automorphisms; this does not infer that equivalence
-    from a static readout.  In the concrete four-coordinate Sigma model, the
-    four forward source edges exhaust the complete admissible outgoing star at
-    the zero event and each has primitive time and positive tension equal to
-    one.
+    the vertex, edge, and face automorphisms.  It also transports valid paths,
+    raw source cochains, path periods, face coboundaries, and the complete
+    source-equivariant raw transition package.  This does not infer the
+    equivalence from a static readout.  In the concrete four-coordinate
+    Sigma model, the four forward source edges exhaust the complete admissible
+    outgoing star at the zero event and each has primitive time and positive
+    tension equal to one.
     The module does not assert that an independently prescribed physical
     network carries the required intrinsic cyclic transition action.
 

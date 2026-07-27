@@ -35,10 +35,11 @@ local valence bound rules out additional outgoing edges.  Finite cardinality
 then constructs the complete regular cyclic outgoing star.
 
 An exact finite transition-complex equivalence provides the application-level
-transport theorem.  It conjugates the canonical vertex and edge automorphisms
-and carries the complete outgoing star to the registered same-section
-complex.  The theorem does not infer such an equivalence from geometric
-readout data.
+transport theorem.  It conjugates the canonical vertex, edge, and face
+automorphisms; carries the complete outgoing star to the registered
+same-section complex; and transports paths, raw source cochains, path periods,
+and face coboundaries.  The theorem does not infer such an equivalence from
+geometric readout data.
 -/
 
 namespace Hardtest
@@ -54,10 +55,15 @@ structure TransitionComplexAutomorphism
     (K : FiniteTransportComplex V E F) where
   vertexEquiv : Equiv.Perm V
   edgeEquiv : Equiv.Perm E
+  faceEquiv : Equiv.Perm F
   source_map :
     ∀ e, K.source (edgeEquiv e) = vertexEquiv (K.source e)
   target_map :
     ∀ e, K.target (edgeEquiv e) = vertexEquiv (K.target e)
+  faceBoundary_map :
+    ∀ f e,
+      K.faceBoundary (faceEquiv f) (edgeEquiv e) =
+        K.faceBoundary f e
 
 namespace TransitionComplexAutomorphism
 
@@ -373,6 +379,91 @@ variable {d : ℕ}
   {K : FiniteTransportComplex V E F}
   {K' : FiniteTransportComplex V' E' F'}
 
+/-- Map an edge list across an exact transition-complex equivalence. -/
+def mapPath
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (edges : List E) : List E' :=
+  edges.map I.edgeEquiv
+
+/-- Mapping every edge by an exact complex equivalence preserves path validity
+and transports both endpoints by the vertex equivalence. -/
+theorem mapPath_valid
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    {startVertex finishVertex : V} {edges : List E}
+    (hpath : K.IsEdgePathFrom startVertex edges finishVertex) :
+    K'.IsEdgePathFrom
+      (I.vertexEquiv startVertex) (I.mapPath edges)
+      (I.vertexEquiv finishVertex) := by
+  induction edges generalizing startVertex with
+  | nil =>
+      change I.vertexEquiv finishVertex = I.vertexEquiv startVertex
+      exact congrArg I.vertexEquiv hpath
+  | cons e rest ih =>
+      rcases hpath with ⟨hsource, htail⟩
+      constructor
+      · change K'.source (I.edgeEquiv e) = I.vertexEquiv startVertex
+        rw [I.source_map]
+        exact congrArg I.vertexEquiv hsource
+      · change K'.IsEdgePathFrom
+          (K'.target (I.edgeEquiv e)) (I.mapPath rest)
+          (I.vertexEquiv finishVertex)
+        rw [I.target_map]
+        exact ih htail
+
+/-- Pull an edge cochain forward by precomposition with the inverse edge
+equivalence. -/
+def mapCochain
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (rho : E → ℝ) : E' → ℝ :=
+  fun e' => rho (I.edgeEquiv.symm e')
+
+@[simp]
+theorem mapCochain_edge_apply
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (rho : E → ℝ) (e : E) :
+    I.mapCochain rho (I.edgeEquiv e) = rho e := by
+  simp [mapCochain]
+
+/-- Reindexing a path and its cochain by the same edge equivalence preserves
+the finite path integral exactly. -/
+theorem pathIntegral_mapPath
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (rho : E → ℝ) (edges : List E) :
+    pathIntegral (I.mapCochain rho) (I.mapPath edges) =
+      pathIntegral rho edges := by
+  induction edges with
+  | nil =>
+      simp [mapPath, pathIntegral]
+  | cons e rest ih =>
+      change
+        I.mapCochain rho (I.edgeEquiv e) +
+            pathIntegral (I.mapCochain rho) (I.mapPath rest) =
+          rho e + pathIntegral rho rest
+      rw [I.mapCochain_edge_apply, ih]
+
+/-- Face coboundaries are invariant under the simultaneous face, edge, and
+cochain transport of an exact transition-complex equivalence. -/
+theorem faceCoboundary_mapCochain
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (rho : E → ℝ) (f : F) :
+    K'.faceCoboundary (I.mapCochain rho) (I.faceEquiv f) =
+      K.faceCoboundary rho f := by
+  unfold FiniteTransportComplex.faceCoboundary
+  calc
+    (∑ e' : E',
+        (K'.faceBoundary (I.faceEquiv f) e' : ℝ) *
+          I.mapCochain rho e') =
+        ∑ e : E,
+          (K'.faceBoundary (I.faceEquiv f) (I.edgeEquiv e) : ℝ) *
+            I.mapCochain rho (I.edgeEquiv e) := by
+              symm
+              exact I.edgeEquiv.sum_comp
+                (fun e' : E' =>
+                  (K'.faceBoundary (I.faceEquiv f) e' : ℝ) *
+                    I.mapCochain rho e')
+    _ = ∑ e : E, (K.faceBoundary f e : ℝ) * rho e := by
+          simp [I.faceBoundary_map]
+
 /--
 Conjugating a transition automorphism by a complex equivalence constructs the
 corresponding automorphism on the registered transition complex.
@@ -385,6 +476,8 @@ noncomputable def mapAutomorphism
     (I.vertexEquiv.symm.trans A.vertexEquiv).trans I.vertexEquiv
   edgeEquiv :=
     (I.edgeEquiv.symm.trans A.edgeEquiv).trans I.edgeEquiv
+  faceEquiv :=
+    (I.faceEquiv.symm.trans A.faceEquiv).trans I.faceEquiv
   source_map := by
     intro e'
     have hs :
@@ -403,6 +496,24 @@ noncomputable def mapAutomorphism
       simpa using (I.target_map (I.edgeEquiv.symm e')).symm
     simp only [Equiv.trans_apply]
     rw [I.target_map, A.target_map, ht]
+  faceBoundary_map := by
+    intro f' e'
+    simp only [Equiv.trans_apply]
+    calc
+      K'.faceBoundary
+          (I.faceEquiv (A.faceEquiv (I.faceEquiv.symm f')))
+          (I.edgeEquiv (A.edgeEquiv (I.edgeEquiv.symm e'))) =
+          K.faceBoundary
+            (A.faceEquiv (I.faceEquiv.symm f'))
+            (A.edgeEquiv (I.edgeEquiv.symm e')) :=
+        I.faceBoundary_map _ _
+      _ = K.faceBoundary
+            (I.faceEquiv.symm f') (I.edgeEquiv.symm e') :=
+        A.faceBoundary_map _ _
+      _ = K'.faceBoundary f' e' := by
+        simpa using
+          (I.faceBoundary_map
+            (I.faceEquiv.symm f') (I.edgeEquiv.symm e')).symm
 
 @[simp]
 theorem mapAutomorphism_vertex_apply
@@ -420,6 +531,15 @@ theorem mapAutomorphism_edge_apply
     (e : E) :
     (I.mapAutomorphism A).edgeEquiv (I.edgeEquiv e) =
       I.edgeEquiv (A.edgeEquiv e) := by
+  simp [mapAutomorphism]
+
+@[simp]
+theorem mapAutomorphism_face_apply
+    (I : TransitionComplexEquiv V E F V' E' F' K K')
+    (A : TransitionComplexAutomorphism V E F K)
+    (f : F) :
+    (I.mapAutomorphism A).faceEquiv (I.faceEquiv f) =
+      I.faceEquiv (A.faceEquiv f) := by
   simp [mapAutomorphism]
 
 /-- Conjugation intertwines every finite iterate of the edge action. -/
@@ -672,6 +792,54 @@ noncomputable def finiteSourcePeriodCarrierRegistration
     FiniteSourcePeriodCarrierRegistration d :=
   O.toSourceBalancedConfluenceCertificate
     |>.finiteSourcePeriodCarrierRegistration
+
+/--
+An exact transition-complex equivalence transports the complete
+source-equivariant raw transition package.  Paths and raw source cochains are
+reindexed by the edge equivalence; path periods and face coboundaries are
+therefore preserved rather than re-assumed on the target complex.
+-/
+noncomputable def mapTransitionComplexEquiv
+    {V' E' F' : Type*} [Fintype E'] [Fintype F']
+    {K' : FiniteTransportComplex V' E' F'}
+    (O : SourceEquivariantRawTransitionOrbit d V E F)
+    (I : TransitionComplexEquiv
+      V E F V' E' F' O.complex K') :
+    SourceEquivariantRawTransitionOrbit d V' E' F' where
+  complex := K'
+  transition := I.mapAutomorphism O.transition
+  atomEquiv := O.atomEquiv
+  rawSource := fun j => I.mapCochain (O.rawSource j)
+  sourceComponent_map := by
+    intro j e'
+    simp [TransitionComplexEquiv.mapCochain,
+      TransitionComplexEquiv.mapAutomorphism, O.sourceComponent_map]
+  rawFaceCommonMode := by
+    intro f'
+    let f := I.faceEquiv.symm f'
+    rcases O.rawFaceCommonMode f with ⟨c, hc⟩
+    refine ⟨c, ?_⟩
+    intro j
+    have hface :
+        I.faceEquiv f = f' := I.faceEquiv.apply_symm_apply f'
+    rw [← hface, I.faceCoboundary_mapCochain]
+    exact hc j
+  startVertex := I.vertexEquiv O.startVertex
+  finishVertex := I.vertexEquiv O.finishVertex
+  basePath := I.mapPath O.basePath
+  basePathValid := I.mapPath_valid O.basePathValid
+  startFixed := by
+    rw [I.mapAutomorphism_vertex_apply, O.startFixed]
+  finishFixed := by
+    rw [I.mapAutomorphism_vertex_apply, O.finishFixed]
+  baseAtom := O.baseAtom
+  atomOrbit := O.atomOrbit
+  rawOffset := O.rawOffset
+  offsetInvariant := O.offsetInvariant
+  basePathValue := by
+    intro j
+    rw [I.pathIntegral_mapPath]
+    exact O.basePathValue j
 
 end SourceEquivariantRawTransitionOrbit
 
@@ -973,10 +1141,15 @@ noncomputable def rawTransitionComplexAutomorphism
     (transitionAutomorphism L hL).vertexEquiv
   edgeEquiv :=
     (transitionAutomorphism L hL).edgeEquiv
+  faceEquiv :=
+    Equiv.refl Empty
   source_map :=
     (transitionAutomorphism L hL).source_map
   target_map :=
     (transitionAutomorphism L hL).target_map
+  faceBoundary_map := by
+    intro f
+    exact nomatch f
 
 /-- Coordinate rotation transports the outgoing source-edge frame
 equivariantly. -/
